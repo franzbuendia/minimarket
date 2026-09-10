@@ -4,12 +4,12 @@
 		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>com.minimarket</groupId>
-	<artifactId>pos-system</artifactId>
+	<groupId>com.lacanasta</groupId>
+	<artifactId>pos-lacanasta</artifactId>
 	<version>1.0.0</version>
 	<packaging>jar</packaging>
-	<name>pos-system</name>
-	<description>Minimarket POS - JavaFX + JDBC</description>
+	<name>pos-lacanasta</name>
+	<description>Sistema POS "La Canasta" - JavaFX + JDBC</description>
 
 	<properties>
 		<maven.compiler.release>21</maven.compiler.release>
@@ -17,6 +17,8 @@
 		<javafx.version>21</javafx.version>
 		<mysql.version>8.4.0</mysql.version>
 		<junit.version>5.10.2</junit.version>
+		<jbcrypt.version>0.4</jbcrypt.version>
+		<itext.version>7.2.5</itext.version>
 	</properties>
 
 	<dependencies>
@@ -36,6 +38,19 @@
 			<artifactId>mysql-connector-j</artifactId>
 			<version>${mysql.version}</version>
 			<scope>runtime</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.mindrot</groupId>
+			<artifactId>jbcrypt</artifactId>
+			<version>${jbcrypt.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.itextpdf</groupId>
+			<artifactId>itext7-core</artifactId>
+			<version>${itext.version}</version>
+			<type>pom</type>
 		</dependency>
 
 		<dependency>
@@ -68,7 +83,7 @@
 				<artifactId>javafx-maven-plugin</artifactId>
 				<version>0.0.8</version>
 				<configuration>
-					<mainClass>com.minimarket.MainApp</mainClass>
+					<mainClass>com.lacanasta.app.MainApp</mainClass>
 				</configuration>
 			</plugin>
 		</plugins>

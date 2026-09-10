@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox spacing="12.0" styleClass="module"
+      xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.lacanasta.controller.CompraController">
+
+    <Label text="Registrar Compra" styleClass="module-title"/>
+
+    <HBox spacing="10.0" alignment="CENTER_LEFT">
+        <Label text="Proveedor:"/>
+        <ComboBox fx:id="cmbProveedor" prefWidth="220.0"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Label fx:id="lblTotal" text="Total: S/ 0.00" styleClass="total-label"/>
+        <Button text="Registrar Compra" onAction="#onRegistrarCompra" styleClass="primary-button"/>
+    </HBox>
+
+    <HBox spacing="12.0" VBox.vgrow="ALWAYS">
+        <VBox spacing="8.0" HBox.hgrow="ALWAYS">
+            <Label text="Productos disponibles"/>
+            <TableView fx:id="tablaProductos" VBox.vgrow="ALWAYS">
+                <columns>
+                    <TableColumn fx:id="colNombreProd" text="Producto" prefWidth="220.0"/>
+                    <TableColumn fx:id="colStockProd" text="Stock" prefWidth="70.0"/>
+                    <TableColumn fx:id="colPrecioProd" text="Precio" prefWidth="80.0"/>
+                </columns>
+            </TableView>
+        </VBox>
+
+        <VBox spacing="8.0" prefWidth="160.0">
+            <Label text="Cantidad:"/>
+            <TextField fx:id="txtCantidad"/>
+            <Label text="Costo unitario:"/>
+            <TextField fx:id="txtCosto"/>
+            <Button text="Agregar línea" onAction="#onAgregarLinea"/>
+        </VBox>
+
+        <VBox spacing="8.0" HBox.hgrow="ALWAYS">
+            <Label text="Detalle de compra"/>
+            <TableView fx:id="tablaDetalle" VBox.vgrow="ALWAYS">
+                <columns>
+                    <TableColumn fx:id="colProductoDetalle" text="Producto" prefWidth="180.0"/>
+                    <TableColumn fx:id="colCantidadDetalle" text="Cant." prefWidth="70.0"/>
+                    <TableColumn fx:id="colCostoDetalle" text="Costo" prefWidth="90.0"/>
+                    <TableColumn fx:id="colSubtotalDetalle" text="Subtotal" prefWidth="90.0"/>
+                </columns>
+            </TableView>
+        </VBox>
+    </HBox>
+
+</VBox>

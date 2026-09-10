@@ -1,0 +1,155 @@
+.root {
+    -fx-font-family: "Segoe UI", sans-serif;
+    -fx-background-color: #F7FAFC;
+}
+
+/* ---- Login ---- */
+.login-panel {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 8;
+    -fx-padding: 24;
+    -fx-effect: dropshadow(gaussian, rgba(26, 54, 93, 0.25), 12, 0, 0, 3);
+}
+
+.title-label {
+    -fx-font-size: 30px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1A365D;
+}
+
+.subtitle-label {
+    -fx-font-size: 16px;
+    -fx-text-fill: #4A5568;
+}
+
+.welcome-label {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1A365D;
+}
+
+/* ---- Botones ---- */
+.primary-button {
+    -fx-background-color: #38A169;
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-min-height: 48px;
+    -fx-min-width: 120px;
+    -fx-background-radius: 6;
+}
+
+.primary-button:hover {
+    -fx-background-color: #2F855A;
+}
+
+/* ---- Header ---- */
+.header {
+    -fx-background-color: #1A365D;
+    -fx-padding: 16 20;
+}
+
+.header-title {
+    -fx-text-fill: white;
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+}
+
+.error-label {
+    -fx-text-fill: #C53030;
+    -fx-font-weight: bold;
+}
+
+/* ---- Dashboard ---- */
+.sidebar {
+    -fx-background-color: #1A365D;
+    -fx-padding: 12 8;
+    -fx-min-width: 170;
+}
+
+.menu-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #E2E8F0;
+    -fx-font-size: 15px;
+    -fx-min-height: 48px;
+    -fx-max-width: Infinity;
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 0 16;
+    -fx-cursor: hand;
+}
+
+.menu-button:hover {
+    -fx-background-color: #2A4365;
+    -fx-text-fill: white;
+}
+
+.header-user {
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+.header-rol {
+    -fx-text-fill: #CBD5E0;
+    -fx-font-size: 12px;
+}
+
+.logout-button {
+    -fx-background-color: #C53030;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-min-height: 40px;
+    -fx-background-radius: 4;
+}
+
+.logout-button:hover {
+    -fx-background-color: #9B2C2C;
+}
+
+/* ---- Módulos ---- */
+.module {
+    -fx-padding: 16;
+}
+
+.module-title {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1A365D;
+}
+
+.form-panel {
+    -fx-background-color: white;
+    -fx-padding: 20;
+}
+
+/* ---- Tablas ---- */
+.table-view {
+    -fx-background-color: white;
+    -fx-border-color: #E2E8F0;
+}
+
+/* ---- Ventas ---- */
+.total-label {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1A365D;
+}
+
+.small-button {
+    -fx-min-height: 40px;
+    -fx-min-width: 40px;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+}
+
+.danger-button {
+    -fx-background-color: #C53030;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-min-height: 40px;
+    -fx-background-radius: 4;
+}
+
+.danger-button:hover {
+    -fx-background-color: #9B2C2C;
+}

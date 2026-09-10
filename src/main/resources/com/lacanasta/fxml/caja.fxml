@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox spacing="12.0" styleClass="module"
+      xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.lacanasta.controller.CajaController">
+
+    <Label text="Caja" styleClass="module-title"/>
+
+    <HBox spacing="12.0" alignment="CENTER_LEFT">
+        <VBox spacing="4.0">
+            <Label fx:id="lblEstadoCaja" styleClass="subtitle-label"/>
+            <Label fx:id="lblIdCaja"/>
+            <Label fx:id="lblMontoInicial"/>
+            <Label fx:id="lblFechaApertura"/>
+        </VBox>
+        <Region HBox.hgrow="ALWAYS"/>
+        <VBox spacing="8.0">
+            <Button text="Abrir Caja" onAction="#onAbrirCaja" styleClass="primary-button"/>
+            <Button text="Cerrar Caja" onAction="#onCerrarCaja"/>
+            <Button text="Registrar Ingreso/Egreso" onAction="#onRegistrarMovimiento"/>
+        </VBox>
+    </HBox>
+
+    <Label fx:id="lblResumen"/>
+
+    <Label text="Movimientos" styleClass="subtitle-label"/>
+
+    <TableView fx:id="tablaMovimientos" VBox.vgrow="ALWAYS">
+        <columns>
+            <TableColumn fx:id="colFecha" text="Fecha" prefWidth="160.0"/>
+            <TableColumn fx:id="colTipo" text="Tipo" prefWidth="100.0"/>
+            <TableColumn fx:id="colMonto" text="Monto" prefWidth="100.0"/>
+            <TableColumn fx:id="colDescripcion" text="Descripción" prefWidth="220.0"/>
+        </columns>
+    </TableView>
+
+</VBox>
