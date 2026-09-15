@@ -31,3 +31,10 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Credenciales y archivos generados en local ###
+src/main/resources/db.properties
+src/main/resources/database.properties
+tickets/
+reportes/
+*.log

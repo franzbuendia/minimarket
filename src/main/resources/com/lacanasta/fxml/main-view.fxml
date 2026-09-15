@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane fx:id="rootPane" xmlns="http://javafx.com/javafx/21"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.lacanasta.controller.MainController">
+
+    <top>
+        <HBox styleClass="header" spacing="10.0" alignment="CENTER_LEFT">
+            <Label text="La Canasta" styleClass="header-title"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <VBox alignment="CENTER_RIGHT" spacing="2.0">
+                <Label fx:id="lblUsuario" styleClass="header-user"/>
+                <Label fx:id="lblRol" styleClass="header-rol"/>
+            </VBox>
+            <Button text="Cerrar sesión" onAction="#cerrarSesion" styleClass="logout-button"/>
+        </HBox>
+    </top>
+
+    <left>
+        <VBox styleClass="sidebar" spacing="6.0">
+            <Button text="Ventas" onAction="#abrirVentas" styleClass="menu-button"/>
+            <Button text="Caja" onAction="#abrirCaja" styleClass="menu-button"/>
+            <Button text="Reportes" onAction="#abrirReportes" styleClass="menu-button"/>
+            <Button fx:id="btnProductos" text="Productos" onAction="#abrirProductos" styleClass="menu-button"/>
+            <Button fx:id="btnCompras" text="Compras" onAction="#abrirCompras" styleClass="menu-button"/>
+            <Button fx:id="btnProveedores" text="Proveedores" onAction="#abrirProveedores" styleClass="menu-button"/>
+            <Button fx:id="btnUsuarios" text="Usuarios" onAction="#abrirUsuarios" styleClass="menu-button"/>
+            <Button fx:id="btnConfiguracion" text="Configuración" onAction="#abrirConfiguracion" styleClass="menu-button"/>
+        </VBox>
+    </left>
+
+    <center>
+        <VBox alignment="CENTER" spacing="10.0">
+            <Label text="La Canasta - Sistema POS" styleClass="welcome-label"/>
+            <Label text="Seleccione un módulo del menú" styleClass="subtitle-label"/>
+        </VBox>
+    </center>
+
+</BorderPane>

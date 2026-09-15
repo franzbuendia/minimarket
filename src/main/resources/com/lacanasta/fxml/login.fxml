@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox alignment="CENTER" spacing="16.0" styleClass="login-panel"
+      xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.lacanasta.controller.LoginController">
+
+    <Label text="La Canasta" styleClass="title-label"/>
+    <Label text="Iniciar sesión" styleClass="subtitle-label"/>
+
+    <GridPane hgap="10.0" vgap="12.0" alignment="CENTER">
+        <Label text="Usuario:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+        <TextField fx:id="txtUsuario" promptText="usuario" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+        <Label text="Contraseña:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+        <PasswordField fx:id="txtContrasena" promptText="contraseña" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+    </GridPane>
+
+    <Button text="Ingresar" onAction="#onLogin" defaultButton="true" styleClass="primary-button"/>
+
+    <Label fx:id="lblError" styleClass="error-label" visible="false"/>
+
+</VBox>

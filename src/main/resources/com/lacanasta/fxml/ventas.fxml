@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<HBox spacing="12.0" styleClass="module"
+      xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.lacanasta.controller.VentaController">
+
+    <!-- Panel izquierdo: carrito -->
+    <VBox spacing="10.0" HBox.hgrow="ALWAYS">
+        <Label text="Carrito de venta" styleClass="module-title"/>
+
+        <TableView fx:id="tablaCarrito" VBox.vgrow="ALWAYS">
+            <columns>
+                <TableColumn fx:id="colProducto" text="Producto" prefWidth="200.0"/>
+                <TableColumn fx:id="colPrecio" text="Precio" prefWidth="90.0"/>
+                <TableColumn fx:id="colCantidad" text="Cantidad" prefWidth="80.0"/>
+                <TableColumn fx:id="colSubtotal" text="Subtotal" prefWidth="90.0"/>
+            </columns>
+        </TableView>
+
+        <HBox spacing="8.0">
+            <Button text="+" onAction="#onIncrementar" styleClass="small-button"/>
+            <Button text="-" onAction="#onDecrementar" styleClass="small-button"/>
+            <Button text="Quitar" onAction="#onQuitar"/>
+            <Button text="Vaciar" onAction="#onVaciar" styleClass="danger-button"/>
+        </HBox>
+
+        <Label fx:id="lblTotal" text="Total: S/ 0.00" styleClass="total-label"/>
+
+        <HBox spacing="8.0" alignment="CENTER_LEFT">
+            <Label text="Método de pago:"/>
+            <ComboBox fx:id="cmbMetodoPago" prefWidth="160.0"/>
+        </HBox>
+
+        <HBox spacing="8.0" alignment="CENTER_LEFT">
+            <Label text="Monto recibido:"/>
+            <TextField fx:id="txtMontoRecibido" prefWidth="160.0"/>
+        </HBox>
+
+        <Label fx:id="lblVuelto" text="Vuelto: S/ 0.00"/>
+
+        <Button text="Pagar" onAction="#onPagar" styleClass="primary-button" maxWidth="Infinity"/>
+    </VBox>
+
+    <!-- Panel derecho: búsqueda -->
+    <VBox spacing="10.0" prefWidth="360.0">
+        <Label text="Buscar producto" styleClass="module-title"/>
+
+        <TextField fx:id="txtBuscar" promptText="Escanear código o buscar..." onAction="#onBuscar"/>
+
+        <TableView fx:id="tablaResultados" VBox.vgrow="ALWAYS">
+            <columns>
+                <TableColumn fx:id="colNombreResultado" text="Producto" prefWidth="180.0"/>
+                <TableColumn fx:id="colPrecioResultado" text="Precio" prefWidth="80.0"/>
+                <TableColumn fx:id="colStockResultado" text="Stock" prefWidth="60.0"/>
+            </columns>
+        </TableView>
+
+        <Button text="Agregar al carrito" onAction="#onAgregar" maxWidth="Infinity"/>
+    </VBox>
+
+</HBox>
