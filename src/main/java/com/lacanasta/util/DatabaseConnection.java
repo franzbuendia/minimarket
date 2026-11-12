@@ -40,10 +40,13 @@ public class DatabaseConnection implements ConnectionProvider {
      */
     @Override
     public Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(
-                PROPERTIES.getProperty("db.url"),
-                PROPERTIES.getProperty("db.user"),
-                PROPERTIES.getProperty("db.password")
-        );
+        String url = System.getProperty("db.url",
+                PROPERTIES.getProperty("db.url", "jdbc:mysql://localhost:3306/minimarket?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true"));
+        String user = System.getProperty("db.user",
+                PROPERTIES.getProperty("db.user", "root"));
+        String password = System.getProperty("db.password",
+                PROPERTIES.getProperty("db.password", ""));
+
+        return DriverManager.getConnection(url, user, password);
     }
 }
