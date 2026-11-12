@@ -6,6 +6,9 @@ import com.lacanasta.util.AlertUtil;
 import com.lacanasta.util.IconFactory;
 import com.lacanasta.util.SessionManager;
 import com.lacanasta.util.ViewLoader;
+import javafx.animation.FadeTransition;
+import javafx.animation.ParallelTransition;
+import javafx.animation.TranslateTransition;
 import javafx.fxml.FXML;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -15,6 +18,7 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 import java.util.List;
 
@@ -176,7 +180,21 @@ public class MainController {
     private void navegar(String fxml, String modulo, Button activo) {
         try {
             Parent view = ViewLoader.load(fxml);
+            view.setOpacity(0.0);
+            view.setTranslateY(8.0);
             contentArea.getChildren().setAll(view);
+
+            FadeTransition fade = new FadeTransition(Duration.millis(220), view);
+            fade.setFromValue(0.0);
+            fade.setToValue(1.0);
+
+            TranslateTransition slide = new TranslateTransition(Duration.millis(220), view);
+            slide.setFromY(8.0);
+            slide.setToY(0.0);
+
+            ParallelTransition transition = new ParallelTransition(fade, slide);
+            transition.play();
+
             lblModule.setText(modulo);
             for (Button b : navButtons) {
                 b.getStyleClass().remove("active");
@@ -199,11 +217,13 @@ public class MainController {
             SessionManager.clear();
             Parent root = ViewLoader.load("/com/lacanasta/fxml/login.fxml");
             Stage stage = (Stage) rootPane.getScene().getWindow();
-            Scene scene = new Scene(root, 420, 520);
+            Scene scene = new Scene(root, 470, 630);
             scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
-            stage.setTitle("La Canasta - Sistema POS");
+            stage.setTitle("La Canasta - Sistema POS & Gestión");
+            stage.setMaximized(false);
             stage.setResizable(false);
             stage.setScene(scene);
+            stage.centerOnScreen();
         } catch (Exception e) {
             AlertUtil.mostrarError("Error", "No se pudo cerrar la sesión: " + e.getMessage());
         }

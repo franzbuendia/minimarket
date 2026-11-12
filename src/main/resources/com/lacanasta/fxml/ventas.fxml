@@ -11,6 +11,7 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
 
 <VBox spacing="18.0" styleClass="module"
       xmlns="http://javafx.com/javafx/21"
@@ -39,7 +40,7 @@
             </HBox>
 
             <HBox styleClass="field" spacing="10.0" alignment="CENTER_LEFT">
-                <Label text="🔍" styleClass="field-icon"/>
+                <FontIcon iconLiteral="fas-search" iconSize="15" iconColor="#64748b"/>
                 <TextField fx:id="txtBuscar" promptText="Buscar por nombre o escanear código..." HBox.hgrow="ALWAYS" onAction="#onBuscar"/>
             </HBox>
 
@@ -48,6 +49,7 @@
                     <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
                 </columnResizePolicy>
                 <columns>
+                    <TableColumn fx:id="colImagenResultado" text="Foto" prefWidth="54.0" minWidth="54.0" maxWidth="64.0"/>
                     <TableColumn fx:id="colNombreResultado" text="Producto" prefWidth="250.0"/>
                     <TableColumn fx:id="colStockResultado" text="Stock" prefWidth="90.0" minWidth="80.0" maxWidth="120.0"/>
                     <TableColumn fx:id="colPrecioResultado" text="Precio" prefWidth="90.0" minWidth="80.0" maxWidth="120.0"/>
@@ -63,14 +65,18 @@
                     <Label fx:id="lblUnidades" text="0 unidades" styleClass="card-subtitle"/>
                 </VBox>
                 <Region HBox.hgrow="ALWAYS"/>
-                <Button text="Vaciar" onAction="#onVaciar" styleClass="btn, btn-danger"/>
+                <Button text="Vaciar" onAction="#onVaciar" styleClass="btn, btn-danger">
+                    <graphic>
+                        <FontIcon iconLiteral="fas-trash-alt" iconSize="13"/>
+                    </graphic>
+                </Button>
             </HBox>
 
             <ListView fx:id="lstCarrito" VBox.vgrow="ALWAYS"/>
 
             <VBox spacing="9.0" styleClass="cart-summary">
                 <HBox alignment="CENTER_LEFT">
-                    <Label text="Total" styleClass="form-label"/>
+                    <Label text="Total a pagar" styleClass="form-label"/>
                     <Region HBox.hgrow="ALWAYS"/>
                     <Label fx:id="lblTotal" text="S/ 0.00" styleClass="summary-total"/>
                 </HBox>
@@ -78,9 +84,21 @@
                 <Label text="Método de pago" styleClass="form-label"/>
 
                 <HBox spacing="6.0">
-                    <ToggleButton fx:id="btnEfectivo" text="Efectivo" toggleGroup="$grupoPago" onAction="#onMetodoEfectivo" styleClass="payment-option" prefWidth="100" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
-                    <ToggleButton fx:id="btnTarjeta" text="Tarjeta" toggleGroup="$grupoPago" onAction="#onMetodoTarjeta" styleClass="payment-option" prefWidth="100" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
-                    <ToggleButton fx:id="btnYape" text="Yape / Plin" toggleGroup="$grupoPago" onAction="#onMetodoYape" styleClass="payment-option" prefWidth="100" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                    <ToggleButton fx:id="btnEfectivo" text="Efectivo" toggleGroup="$grupoPago" onAction="#onMetodoEfectivo" styleClass="payment-option" prefWidth="100" maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                        <graphic>
+                            <FontIcon iconLiteral="fas-money-bill-wave" iconSize="14"/>
+                        </graphic>
+                    </ToggleButton>
+                    <ToggleButton fx:id="btnTarjeta" text="Tarjeta" toggleGroup="$grupoPago" onAction="#onMetodoTarjeta" styleClass="payment-option" prefWidth="100" maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                        <graphic>
+                            <FontIcon iconLiteral="fas-credit-card" iconSize="14"/>
+                        </graphic>
+                    </ToggleButton>
+                    <ToggleButton fx:id="btnYape" text="Yape / Plin" toggleGroup="$grupoPago" onAction="#onMetodoYape" styleClass="payment-option" prefWidth="100" maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                        <graphic>
+                            <FontIcon iconLiteral="fas-mobile-alt" iconSize="14"/>
+                        </graphic>
+                    </ToggleButton>
                 </HBox>
 
                 <VBox fx:id="panelEfectivo" spacing="9.0">
@@ -91,7 +109,11 @@
                     <Label fx:id="lblVuelto" text="Vuelto: S/ 0.00" styleClass="change-box" maxWidth="Infinity"/>
                 </VBox>
 
-                <Button fx:id="btnPagar" text="Cobrar" onAction="#onPagar" styleClass="btn, btn-primary" maxWidth="Infinity"/>
+                <Button fx:id="btnPagar" text="Cobrar venta" onAction="#onPagar" styleClass="btn, btn-primary" maxWidth="Infinity">
+                    <graphic>
+                        <FontIcon iconLiteral="fas-check-circle" iconSize="17" iconColor="white"/>
+                    </graphic>
+                </Button>
             </VBox>
         </VBox>
     </HBox>

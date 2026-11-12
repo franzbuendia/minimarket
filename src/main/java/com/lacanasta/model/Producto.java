@@ -14,6 +14,7 @@ public class Producto {
     private int stock;
     private boolean estado;
     private Integer idCategoria;
+    private String imagenUrl;
     private Integer usuarioCreacion;
     private LocalDateTime fechaCreacion;
     private Integer usuarioModificacion;
@@ -99,6 +100,14 @@ public class Producto {
 
     public void setIdCategoria(Integer idCategoria) {
         this.idCategoria = idCategoria;
+    }
+
+    public String getImagenUrl() {
+        return imagenUrl;
+    }
+
+    public void setImagenUrl(String imagenUrl) {
+        this.imagenUrl = imagenUrl;
     }
 
     public Integer getUsuarioCreacion() {

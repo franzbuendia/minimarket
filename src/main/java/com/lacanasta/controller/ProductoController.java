@@ -5,6 +5,7 @@ import com.lacanasta.model.Producto;
 import com.lacanasta.service.CategoriaService;
 import com.lacanasta.service.ProductoService;
 import com.lacanasta.util.AlertUtil;
+import com.lacanasta.util.ProductImageHelper;
 import com.lacanasta.util.ViewLoader;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
@@ -45,6 +46,9 @@ public class ProductoController {
 
     @FXML
     private TableView<Producto> tabla;
+
+    @FXML
+    private TableColumn<Producto, String> colImagen;
 
     @FXML
     private TableColumn<Producto, String> colCodigo;
@@ -92,6 +96,23 @@ public class ProductoController {
      */
     @FXML
     private void initialize() {
+        colImagen.setCellValueFactory(cell -> new ReadOnlyStringWrapper(cell.getValue().getImagenUrl()));
+        colImagen.setCellFactory(col -> new TableCell<Producto, String>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || getTableRow() == null || getTableRow().getItem() == null) {
+                    setGraphic(null);
+                    setText(null);
+                } else {
+                    Producto p = getTableRow().getItem();
+                    setGraphic(ProductImageHelper.createThumbnail(p.getImagenUrl(), 38, 38, 8));
+                    setAlignment(Pos.CENTER);
+                    setText(null);
+                }
+            }
+        });
+
         colCodigo.setCellValueFactory(cell -> new ReadOnlyStringWrapper(
                 cell.getValue().getCodigoBarras() == null ? "" : cell.getValue().getCodigoBarras()));
         colNombre.setCellValueFactory(cell -> new ReadOnlyStringWrapper(cell.getValue().getNombre()));

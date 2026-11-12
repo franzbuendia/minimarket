@@ -1,36 +1,91 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.PasswordField?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
 
 <StackPane styleClass="login-root" xmlns="http://javafx.com/javafx/21"
            xmlns:fx="http://javafx.com/fxml/1"
            fx:controller="com.lacanasta.controller.LoginController">
 
-    <VBox styleClass="login-card" alignment="CENTER" spacing="16.0" prefWidth="400.0" maxWidth="400.0">
-        <ImageView fx:id="imgLogo" fitWidth="240.0" preserveRatio="true"/>
-        <Label text="Iniciar sesión" styleClass="login-subtitle"/>
+    <!-- Tarjeta flotante de login -->
+    <VBox styleClass="login-card" alignment="CENTER" maxWidth="430.0" prefWidth="430.0" spacing="16.0">
+        
+        <!-- Contenedor del Logo -->
+        <VBox alignment="CENTER" spacing="8.0" styleClass="login-header-box">
+            <ImageView fx:id="imgLogo" fitWidth="220.0" preserveRatio="true"/>
+            <Label text="PUNTO DE VENTA" styleClass="login-badge-eyebrow"/>
+            <Label text="Acceso al Sistema" styleClass="login-card-title"/>
+            <Label text="Ingresa tus credenciales para continuar" styleClass="login-card-subtitle"/>
+        </VBox>
 
-        <HBox styleClass="field" spacing="10.0" alignment="CENTER_LEFT">
-            <Label text="👤" styleClass="field-icon"/>
-            <TextField fx:id="txtUsuario" promptText="Usuario" HBox.hgrow="ALWAYS"/>
+        <!-- Campo Usuario -->
+        <VBox spacing="6.0" alignment="CENTER_LEFT">
+            <Label text="USUARIO" styleClass="login-field-label"/>
+            <HBox styleClass="login-input-box" alignment="CENTER_LEFT" spacing="10.0">
+                <FontIcon iconLiteral="fas-user" iconSize="15" iconColor="#64748b"/>
+                <TextField fx:id="txtUsuario" promptText="admin / cajero1" HBox.hgrow="ALWAYS" styleClass="login-input"/>
+            </HBox>
+        </VBox>
+
+        <!-- Campo Contraseña -->
+        <VBox spacing="6.0" alignment="CENTER_LEFT">
+            <Label text="CONTRASEÑA" styleClass="login-field-label"/>
+            <HBox styleClass="login-input-box" alignment="CENTER_LEFT" spacing="10.0">
+                <FontIcon iconLiteral="fas-lock" iconSize="15" iconColor="#64748b"/>
+                <PasswordField fx:id="txtContrasena" promptText="••••••••" HBox.hgrow="ALWAYS" styleClass="login-input"/>
+                <TextField fx:id="txtContrasenaPlano" promptText="••••••••" HBox.hgrow="ALWAYS" styleClass="login-input" visible="false" managed="false"/>
+                <Button fx:id="btnTogglePassword" onAction="#onTogglePassword" styleClass="login-toggle-btn">
+                    <graphic>
+                        <FontIcon iconLiteral="fas-eye" iconSize="15" iconColor="#64748b"/>
+                    </graphic>
+                </Button>
+            </HBox>
+        </VBox>
+
+        <!-- Etiqueta de Error -->
+        <HBox fx:id="boxError" alignment="CENTER_LEFT" spacing="8.0">
+            <Label fx:id="lblError" styleClass="login-error-banner" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
         </HBox>
 
-        <HBox styleClass="field" spacing="10.0" alignment="CENTER_LEFT">
-            <Label text="🔒" styleClass="field-icon"/>
-            <PasswordField fx:id="txtContrasena" promptText="Contraseña" HBox.hgrow="ALWAYS"/>
-            <Label text="👁" styleClass="field-icon"/>
+        <!-- Botón de Ingreso -->
+        <Button text="Ingresar" onAction="#onLogin" defaultButton="true" styleClass="login-button" maxWidth="Infinity">
+            <graphic>
+                <FontIcon iconLiteral="fas-sign-in-alt" iconSize="16" iconColor="#ffffff"/>
+            </graphic>
+        </Button>
+
+        <!-- Acceso Rápido para Pruebas / Demostración -->
+        <VBox spacing="8.0" alignment="CENTER" styleClass="login-quick-box">
+            <Label text="CUENTAS DISPONIBLES (DEMO)" styleClass="login-quick-label"/>
+            <HBox spacing="10.0" alignment="CENTER">
+                <Button text="Admin" onAction="#onSelectAdmin" styleClass="login-quick-chip">
+                    <graphic>
+                        <FontIcon iconLiteral="fas-user-shield" iconSize="13" iconColor="#0284c7"/>
+                    </graphic>
+                </Button>
+                <Button text="Cajero" onAction="#onSelectCajero" styleClass="login-quick-chip">
+                    <graphic>
+                        <FontIcon iconLiteral="fas-cash-register" iconSize="13" iconColor="#10b981"/>
+                    </graphic>
+                </Button>
+            </HBox>
+        </VBox>
+
+        <!-- Pie de tarjeta -->
+        <HBox alignment="CENTER" spacing="6.0" styleClass="login-footer">
+            <FontIcon iconLiteral="fas-shield-alt" iconSize="13" iconColor="#10b981"/>
+            <Label text="Conexión segura • Sistema POS La Canasta" styleClass="login-footer-text"/>
         </HBox>
 
-        <Label fx:id="lblError" styleClass="error-label" visible="false"/>
-
-        <Button text="Ingresar" onAction="#onLogin" defaultButton="true" styleClass="login-button" maxWidth="Infinity"/>
     </VBox>
 
 </StackPane>
