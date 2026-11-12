@@ -7,6 +7,7 @@ import com.lacanasta.service.ProductoService;
 import com.lacanasta.util.AlertUtil;
 import com.lacanasta.util.ProductImageHelper;
 import com.lacanasta.util.SessionManager;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
@@ -86,6 +87,14 @@ public class ProductoFormController {
             txtImagen.textProperty().addListener((obs, oldV, newV) -> actualizarPreview(newV));
             actualizarPreview("");
         }
+        if (txtCodigo != null && txtNombre != null) {
+            txtCodigo.setOnAction(e -> txtNombre.requestFocus());
+        }
+        Platform.runLater(() -> {
+            if (txtCodigo != null) {
+                txtCodigo.requestFocus();
+            }
+        });
     }
 
     private void actualizarPreview(String url) {

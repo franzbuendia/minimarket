@@ -530,6 +530,54 @@
 .badge-neutral { -fx-background-color: #f1f5f9; -fx-text-fill: #64748b; }
 .badge-info    { -fx-background-color: #ebf8ff; -fx-text-fill: #0284c7; }
 
+/* ===== Banner de Escáner y Feedback de Stock ===== */
+.scanner-feedback {
+    -fx-padding: 7 12;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-border-width: 1;
+}
+
+.scanner-feedback-idle {
+    -fx-background-color: #f8fafc;
+    -fx-border-color: #e2e8f0;
+}
+.scanner-feedback-idle Label {
+    -fx-text-fill: #64748b;
+    -fx-font-size: 11.5px;
+    -fx-font-weight: 500;
+}
+
+.scanner-feedback-success {
+    -fx-background-color: #ecfdf5;
+    -fx-border-color: #a7f3d0;
+}
+.scanner-feedback-success Label {
+    -fx-text-fill: #047857;
+    -fx-font-size: 11.5px;
+    -fx-font-weight: 600;
+}
+
+.scanner-feedback-error {
+    -fx-background-color: #fef2f2;
+    -fx-border-color: #fecaca;
+}
+.scanner-feedback-error Label {
+    -fx-text-fill: #b91c1c;
+    -fx-font-size: 11.5px;
+    -fx-font-weight: 600;
+}
+
+.scanner-feedback-warning {
+    -fx-background-color: #fffbeb;
+    -fx-border-color: #fde68a;
+}
+.scanner-feedback-warning Label {
+    -fx-text-fill: #b45309;
+    -fx-font-size: 11.5px;
+    -fx-font-weight: 600;
+}
+
 /* ===== Page heading ===== */
 .page-heading {
     -fx-min-height: 66;

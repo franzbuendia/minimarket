@@ -25,8 +25,10 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.application.Platform;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -177,6 +179,11 @@ public class ProductoController {
         tabla.setItems(pagina);
         cargarCategorias();
         cargarProductos();
+        Platform.runLater(() -> {
+            if (txtBuscar != null) {
+                txtBuscar.requestFocus();
+            }
+        });
     }
 
     private void cargarCategorias() {
@@ -209,7 +216,15 @@ public class ProductoController {
             if (texto.isEmpty()) {
                 cargarProductos();
             } else {
-                productos.setAll(productoService.search(texto));
+                Producto porCodigo = productoService.findByCodigoBarras(texto);
+                if (porCodigo == null && texto.startsWith("0")) {
+                    porCodigo = productoService.findByCodigoBarras(texto.replaceFirst("^0+", ""));
+                }
+                if (porCodigo != null) {
+                    productos.setAll(List.of(porCodigo));
+                } else {
+                    productos.setAll(productoService.search(texto));
+                }
                 paginaActual = 0;
                 aplicarPagina();
             }

@@ -15,6 +15,7 @@ import com.lacanasta.util.AlertUtil;
 import com.lacanasta.util.ProductImageHelper;
 import com.lacanasta.util.SessionManager;
 import com.lacanasta.util.TicketPDFGenerator;
+import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -34,6 +35,8 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -42,6 +45,7 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import org.kordamp.ikonli.javafx.FontIcon;
 
+import java.awt.Toolkit;
 import java.awt.Desktop;
 import java.io.File;
 import java.math.BigDecimal;
@@ -67,6 +71,18 @@ public class VentaController {
         this.cajaService = cajaService;
         this.configService = configService;
     }
+
+    @FXML
+    private VBox rootPane;
+
+    @FXML
+    private HBox panelFeedback;
+
+    @FXML
+    private FontIcon iconFeedback;
+
+    @FXML
+    private Label lblFeedback;
 
     @FXML
     private ListView<CarritoItem> lstCarrito;
@@ -122,9 +138,17 @@ public class VentaController {
     @FXML
     private Button btnPagar;
 
+    public enum FeedbackTipo {
+        INFO, SUCCESS, WARNING, ERROR
+    }
+
     private final ObservableList<CarritoItem> carrito = FXCollections.observableArrayList();
     private final ObservableList<Producto> resultados = FXCollections.observableArrayList();
     private MetodoPago metodoPago = MetodoPago.EFECTIVO;
+
+    private final StringBuilder scanBuffer = new StringBuilder();
+    private long lastKeyTime = 0;
+    private boolean filtroInstalado = false;
 
     /**
      * Inicializa las tablas y los controles de pago.
@@ -172,8 +196,20 @@ public class VentaController {
                     setGraphic(null);
                 } else {
                     Producto p = getTableRow().getItem();
-                    Label badge = new Label(p.getStock() + " unidades");
-                    badge.getStyleClass().addAll("badge", p.getStock() < 5 ? "badge-warning" : "badge-neutral");
+                    int enCarro = obtenerCantidadEnCarrito(p.getIdProducto());
+                    int disponible = p.getStock() - enCarro;
+
+                    Label badge;
+                    if (disponible <= 0) {
+                        badge = new Label("Agotado (0)");
+                        badge.getStyleClass().addAll("badge", "badge-danger");
+                    } else if (disponible < 5) {
+                        badge = new Label(disponible + " disp. (Stock: " + p.getStock() + ")");
+                        badge.getStyleClass().addAll("badge", "badge-warning");
+                    } else {
+                        badge = new Label(disponible + " disponibles");
+                        badge.getStyleClass().addAll("badge", "badge-neutral");
+                    }
                     setGraphic(badge);
                 }
             }
@@ -186,11 +222,20 @@ public class VentaController {
                     setGraphic(null);
                 } else {
                     Producto p = getTableRow().getItem();
+                    int enCarro = obtenerCantidadEnCarrito(p.getIdProducto());
+                    int disponible = p.getStock() - enCarro;
+
                     Button btnAgregar = new Button("+ Agregar");
                     btnAgregar.getStyleClass().addAll("btn", "btn-soft");
                     btnAgregar.setPrefWidth(110);
                     btnAgregar.setMinWidth(110);
-                    btnAgregar.setOnAction(e -> agregarAlCarrito(p));
+                    if (disponible <= 0) {
+                        btnAgregar.setDisable(true);
+                    }
+                    btnAgregar.setOnAction(e -> {
+                        agregarAlCarritoConStock(p);
+                        enfocarBuscador();
+                    });
                     HBox box = new HBox(btnAgregar);
                     box.setAlignment(Pos.CENTER_LEFT);
                     box.setMinWidth(Region.USE_PREF_SIZE);
@@ -205,6 +250,17 @@ public class VentaController {
         seleccionarMetodo(MetodoPago.EFECTIVO);
         cargarProductos();
         actualizarTotales();
+
+        // Enfoque automático y preparación del escáner en cualquier parte de la vista
+        enfocarBuscador();
+        if (rootPane != null) {
+            rootPane.sceneProperty().addListener((obs, oldScene, newScene) -> {
+                if (newScene != null) {
+                    instalarFiltroEscanner(newScene);
+                    enfocarBuscador();
+                }
+            });
+        }
     }
 
     private void cargarProductos() {
@@ -215,26 +271,147 @@ public class VentaController {
         }
     }
 
+    private void instalarFiltroEscanner(Scene scene) {
+        if (scene == null || filtroInstalado) return;
+        filtroInstalado = true;
+
+        scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            long now = System.currentTimeMillis();
+            long elapsed = now - lastKeyTime;
+            lastKeyTime = now;
+
+            // Si está en el campo de monto recibido para el pago en efectivo:
+            if (txtMontoRecibido != null && txtMontoRecibido.isFocused()) {
+                if (event.getCode() == KeyCode.ENTER) {
+                    // Si el escáner envió una ráfaga rápida que cayó en el monto:
+                    if (scanBuffer.length() >= 4 && elapsed < 200) {
+                        String barcode = scanBuffer.toString().trim();
+                        scanBuffer.setLength(0);
+                        event.consume();
+                        revertirEscaneoEnMonto(barcode);
+                        procesarCodigo(barcode);
+                    } else {
+                        event.consume();
+                        onPagar();
+                    }
+                }
+                return;
+            }
+
+            if (event.getCode() == KeyCode.ENTER) {
+                // Si el escáner físico envió una ráfaga acumulada en el buffer:
+                if (scanBuffer.length() >= 3 && elapsed < 250) {
+                    String barcode = scanBuffer.toString().trim();
+                    scanBuffer.setLength(0);
+                    event.consume();
+                    procesarCodigo(barcode);
+                    return;
+                }
+
+                // Si txtBuscar no estaba enfocado pero tiene texto:
+                if (txtBuscar != null && !txtBuscar.isFocused() && !txtBuscar.getText().trim().isEmpty()) {
+                    event.consume();
+                    onBuscar();
+                }
+            }
+        });
+
+        scene.addEventFilter(KeyEvent.KEY_TYPED, event -> {
+            String ch = event.getCharacter();
+            if (ch == null || ch.isEmpty() || ch.charAt(0) < 32 || ch.charAt(0) > 126) {
+                return;
+            }
+
+            long now = System.currentTimeMillis();
+            if (now - lastKeyTime > 150) {
+                scanBuffer.setLength(0);
+            }
+            scanBuffer.append(ch);
+            lastKeyTime = now;
+
+            // Si el foco no está en txtBuscar ni en txtMontoRecibido, redirigir al buscador:
+            if (txtBuscar != null && !txtBuscar.isFocused() &&
+                    (txtMontoRecibido == null || !txtMontoRecibido.isFocused())) {
+                txtBuscar.requestFocus();
+                txtBuscar.appendText(ch);
+                event.consume();
+            }
+        });
+    }
+
+    private void revertirEscaneoEnMonto(String barcode) {
+        if (txtMontoRecibido == null) return;
+        String actual = txtMontoRecibido.getText();
+        if (actual != null && !actual.isEmpty()) {
+            if (actual.endsWith(barcode)) {
+                txtMontoRecibido.setText(actual.substring(0, actual.length() - barcode.length()));
+            } else if (actual.equals(barcode)) {
+                txtMontoRecibido.clear();
+            }
+        }
+    }
+
     /**
      * Busca por código de barras (escáner) o por nombre.
      */
     @FXML
     private void onBuscar() {
+        if (txtBuscar == null) return;
         String texto = txtBuscar.getText().trim();
+        procesarCodigo(texto);
+    }
+
+    /**
+     * Procesa la entrada del escáner o teclado, detectando productos automáticamente.
+     */
+    public void procesarCodigo(String texto) {
+        if (texto == null) return;
+        texto = texto.trim();
         if (texto.isEmpty()) {
             cargarProductos();
+            mostrarFeedback("Escáner listo — Pase el lector sobre el código de barras en cualquier momento", FeedbackTipo.INFO);
             return;
         }
+
         try {
+            // 1. Búsqueda exacta por código de barras en el inventario
             Producto porCodigo = productoService.findByCodigoBarras(texto);
+            if (porCodigo == null && texto.startsWith("0")) {
+                porCodigo = productoService.findByCodigoBarras(texto.replaceFirst("^0+", ""));
+            }
+
             if (porCodigo != null) {
-                agregarAlCarrito(porCodigo);
-                txtBuscar.clear();
+                agregarAlCarritoConStock(porCodigo);
+                if (txtBuscar != null) {
+                    txtBuscar.clear();
+                }
+                enfocarBuscador();
                 return;
             }
-            resultados.setAll(productoService.search(texto));
+
+            // 2. Si es numérico (código de barras no encontrado en base de datos)
+            if (texto.matches("\\d{4,}")) {
+                emitirBeepAlerta();
+                mostrarFeedback("⚠ Código no registrado: " + texto + ". Regístrelo en el módulo Productos.", FeedbackTipo.ERROR);
+                if (txtBuscar != null) {
+                    txtBuscar.clear();
+                }
+                enfocarBuscador();
+                return;
+            }
+
+            // 3. Búsqueda textual por nombre de producto
+            List<Producto> encontrados = productoService.search(texto);
+            resultados.setAll(encontrados);
+            if (encontrados.isEmpty()) {
+                emitirBeepAlerta();
+                mostrarFeedback("No se encontraron productos con: \"" + texto + "\"", FeedbackTipo.WARNING);
+            } else {
+                mostrarFeedback("Búsqueda: " + encontrados.size() + " producto(s) encontrado(s)", FeedbackTipo.INFO);
+            }
         } catch (Exception e) {
-            AlertUtil.mostrarError("Error", e.getMessage());
+            emitirBeepAlerta();
+            AlertUtil.mostrarError("Error al escanear", e.getMessage());
         }
     }
 
@@ -248,48 +425,168 @@ public class VentaController {
             AlertUtil.mostrarAdvertencia("Ventas", "Seleccione un producto");
             return;
         }
-        agregarAlCarrito(seleccionado);
+        agregarAlCarritoConStock(seleccionado);
+        enfocarBuscador();
     }
 
-    private void agregarAlCarrito(Producto producto) {
-        if (producto.getStock() < 1) {
-            AlertUtil.mostrarAdvertencia("Ventas", "Sin stock para: " + producto.getNombre());
+    private void agregarAlCarritoConStock(Producto producto) {
+        // Consultar stock fresco directo de la base de datos para sincronización exacta
+        Producto fresco = productoService.findById(producto.getIdProducto());
+        if (fresco != null) {
+            producto = fresco;
+        }
+
+        if (!producto.isEstado()) {
+            emitirBeepAlerta();
+            mostrarFeedback("El producto '" + producto.getNombre() + "' está inactivo.", FeedbackTipo.ERROR);
             return;
         }
+
+        int stockTotal = producto.getStock();
+        int enCarrito = obtenerCantidadEnCarrito(producto.getIdProducto());
+
+        if (stockTotal <= 0) {
+            emitirBeepAlerta();
+            mostrarFeedback("¡SIN STOCK! '" + producto.getNombre() + "' está agotado (Stock: 0)", FeedbackTipo.ERROR);
+            AlertUtil.mostrarAdvertencia("Sin Stock", "El producto '" + producto.getNombre() + "' no tiene stock disponible en inventario.");
+            return;
+        }
+
+        if (enCarrito + 1 > stockTotal) {
+            emitirBeepAlerta();
+            mostrarFeedback("Stock insuficiente: '" + producto.getNombre() + "' solo tiene " + stockTotal + " unid. en stock", FeedbackTipo.WARNING);
+            AlertUtil.mostrarAdvertencia("Stock Insuficiente",
+                    "No se pueden agregar más unidades de '" + producto.getNombre() + "'.\n"
+                    + "Stock disponible en inventario: " + stockTotal + "\n"
+                    + "Ya agregadas al carrito: " + enCarrito);
+            return;
+        }
+
+        boolean existia = false;
         for (CarritoItem item : carrito) {
             if (item.getIdProducto() == producto.getIdProducto()) {
-                if (item.getCantidad() + 1 > producto.getStock()) {
-                    AlertUtil.mostrarAdvertencia("Ventas", "Stock insuficiente para: " + producto.getNombre());
-                    return;
-                }
                 item.setCantidad(item.getCantidad() + 1);
-                lstCarrito.refresh();
-                actualizarTotales();
-                return;
+                existia = true;
+                break;
             }
         }
-        carrito.add(new CarritoItem(producto, 1));
+        if (!existia) {
+            carrito.add(new CarritoItem(producto, 1));
+        }
+
+        lstCarrito.refresh();
         actualizarTotales();
+        tablaResultados.refresh();
+
+        int disponibleRestante = stockTotal - (enCarrito + 1);
+        emitirBeepExito();
+        mostrarFeedback("✓ Escaneado: " + producto.getNombre() + " (S/ " + producto.getPrecioVenta() + ") | Stock disponible: " + disponibleRestante, FeedbackTipo.SUCCESS);
+    }
+
+    private int obtenerCantidadEnCarrito(int idProducto) {
+        int total = 0;
+        for (CarritoItem item : carrito) {
+            if (item.getIdProducto() == idProducto) {
+                total += item.getCantidad();
+            }
+        }
+        return total;
     }
 
     private void cambiarCantidad(CarritoItem item, int delta) {
         int nueva = item.getCantidad() + delta;
         if (nueva <= 0) {
             carrito.remove(item);
+            mostrarFeedback("Producto removido del carrito", FeedbackTipo.INFO);
         } else {
-            if (nueva > item.getProducto().getStock()) {
-                AlertUtil.mostrarAdvertencia("Ventas", "Stock insuficiente");
+            Producto p = productoService.findById(item.getIdProducto());
+            int stockDisponible = (p != null) ? p.getStock() : item.getProducto().getStock();
+            if (nueva > stockDisponible) {
+                emitirBeepAlerta();
+                AlertUtil.mostrarAdvertencia("Ventas", "Stock insuficiente. Máximo disponible: " + stockDisponible);
                 return;
             }
             item.setCantidad(nueva);
         }
         lstCarrito.refresh();
         actualizarTotales();
+        tablaResultados.refresh();
+        enfocarBuscador();
     }
 
     private void quitarItem(CarritoItem item) {
         carrito.remove(item);
         actualizarTotales();
+        tablaResultados.refresh();
+        mostrarFeedback("Producto removido del carrito", FeedbackTipo.INFO);
+        enfocarBuscador();
+    }
+
+    private void mostrarFeedback(String mensaje, FeedbackTipo tipo) {
+        if (lblFeedback == null || panelFeedback == null) return;
+        lblFeedback.setText(mensaje);
+        panelFeedback.getStyleClass().removeAll(
+                "scanner-feedback-idle", "scanner-feedback-success",
+                "scanner-feedback-warning", "scanner-feedback-error");
+
+        String iconLiteral = "fas-barcode";
+        String color = "#64748b";
+
+        switch (tipo) {
+            case SUCCESS -> {
+                panelFeedback.getStyleClass().add("scanner-feedback-success");
+                iconLiteral = "fas-check-circle";
+                color = "#047857";
+            }
+            case WARNING -> {
+                panelFeedback.getStyleClass().add("scanner-feedback-warning");
+                iconLiteral = "fas-exclamation-triangle";
+                color = "#b45309";
+            }
+            case ERROR -> {
+                panelFeedback.getStyleClass().add("scanner-feedback-error");
+                iconLiteral = "fas-times-circle";
+                color = "#b91c1c";
+            }
+            case INFO -> {
+                panelFeedback.getStyleClass().add("scanner-feedback-idle");
+                iconLiteral = "fas-barcode";
+                color = "#64748b";
+            }
+        }
+        if (iconFeedback != null) {
+            iconFeedback.setIconLiteral(iconLiteral);
+            iconFeedback.setIconColor(javafx.scene.paint.Color.web(color));
+        }
+    }
+
+    private void emitirBeepExito() {
+        try {
+            Toolkit.getDefaultToolkit().beep();
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private void emitirBeepAlerta() {
+        try {
+            Toolkit.getDefaultToolkit().beep();
+            new Thread(() -> {
+                try {
+                    Thread.sleep(130);
+                    Toolkit.getDefaultToolkit().beep();
+                } catch (Throwable ignored) {
+                }
+            }).start();
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private void enfocarBuscador() {
+        Platform.runLater(() -> {
+            if (txtBuscar != null) {
+                txtBuscar.requestFocus();
+            }
+        });
     }
 
     private HBox crearFila(CarritoItem item) {
@@ -333,6 +630,9 @@ public class VentaController {
     private void onVaciar() {
         carrito.clear();
         actualizarTotales();
+        tablaResultados.refresh();
+        mostrarFeedback("Carrito vaciado", FeedbackTipo.INFO);
+        enfocarBuscador();
     }
 
     @FXML
@@ -359,6 +659,11 @@ public class VentaController {
         panelEfectivo.setVisible(efectivo);
         panelEfectivo.setManaged(efectivo);
         actualizarTotales();
+        if (efectivo && txtMontoRecibido != null) {
+            Platform.runLater(() -> txtMontoRecibido.requestFocus());
+        } else {
+            enfocarBuscador();
+        }
     }
 
     private void actualizarTotales() {
@@ -469,6 +774,9 @@ public class VentaController {
             txtMontoRecibido.clear();
             actualizarTotales();
             cargarProductos();
+            tablaResultados.refresh();
+            mostrarFeedback("✓ Venta B001-" + String.format("%06d", idVenta) + " registrada. Stock sincronizado con éxito.", FeedbackTipo.SUCCESS);
+            enfocarBuscador();
         } catch (Exception e) {
             AlertUtil.mostrarError("Error", e.getMessage());
         }
@@ -644,7 +952,9 @@ public class VentaController {
         Scene scene = new Scene(root, 420, 580);
         scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
         modal.setScene(scene);
+        modal.setOnHidden(e -> enfocarBuscador());
         modal.showAndWait();
+        enfocarBuscador();
     }
 
     private Region crearSeparadorDashed() {
