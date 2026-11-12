@@ -32,5 +32,7 @@ public interface ProductoDAO {
 
     int updateCosto(Connection conn, int idProducto, BigDecimal costo) throws SQLException;
 
+    int updateStockCosto(Connection conn, int idProducto, int stock, BigDecimal costo, Integer usuarioModificacion) throws SQLException;
+
     int delete(Connection conn, int id) throws SQLException;
 }

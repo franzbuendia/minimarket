@@ -86,6 +86,7 @@
                     <TableColumn fx:id="colMedio" text="Medio de pago" prefWidth="200.0" minWidth="120.0" maxWidth="260.0"/>
                     <TableColumn fx:id="colTotal" text="Total" prefWidth="90.0" minWidth="80.0" maxWidth="120.0"/>
                     <TableColumn fx:id="colEstado" text="Estado" prefWidth="90.0" minWidth="80.0" maxWidth="120.0"/>
+                    <TableColumn fx:id="colAcciones" text="Acciones" prefWidth="120.0" minWidth="120.0" maxWidth="120.0"/>
                 </columns>
             </TableView>
         </VBox>

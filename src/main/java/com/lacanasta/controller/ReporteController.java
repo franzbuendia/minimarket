@@ -1,18 +1,23 @@
 package com.lacanasta.controller;
 
+import com.lacanasta.model.EstadoPago;
 import com.lacanasta.model.Producto;
 import com.lacanasta.model.Venta;
 import com.lacanasta.service.ProductoService;
 import com.lacanasta.service.VentaService;
 import com.lacanasta.util.AlertUtil;
 import com.lacanasta.util.ReportePDFGenerator;
+import com.lacanasta.util.SessionManager;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
+import javafx.geometry.Pos;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.layout.HBox;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -70,6 +75,9 @@ public class ReporteController {
     private TableColumn<Venta, String> colEstado;
 
     @FXML
+    private TableColumn<Venta, String> colAcciones;
+
+    @FXML
     private TableView<Producto> tablaStockBajo;
 
     @FXML
@@ -90,13 +98,36 @@ public class ReporteController {
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || item == null) {
+                if (empty || item == null || getTableRow() == null || getTableRow().getItem() == null) {
                     setGraphic(null);
                 } else {
                     String texto = item.substring(0, 1) + item.substring(1).toLowerCase();
+                    boolean completada = getTableRow().getItem().getEstadoPago() == EstadoPago.COMPLETADA;
                     Label badge = new Label(texto);
-                    badge.getStyleClass().addAll("badge", "badge-success");
+                    badge.getStyleClass().addAll("badge", completada ? "badge-success" : "badge-danger");
                     setGraphic(badge);
+                }
+            }
+        });
+
+        colAcciones.setCellFactory(col -> new TableCell<Venta, String>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || getTableRow() == null || getTableRow().getItem() == null) {
+                    setGraphic(null);
+                } else {
+                    Venta venta = getTableRow().getItem();
+                    if (venta.getEstadoPago() == EstadoPago.COMPLETADA) {
+                        Button btnAnular = new Button("Anular");
+                        btnAnular.getStyleClass().addAll("btn", "btn-danger");
+                        btnAnular.setOnAction(e -> anularVenta(venta));
+                        HBox box = new HBox(btnAnular);
+                        box.setAlignment(Pos.CENTER);
+                        setGraphic(box);
+                    } else {
+                        setGraphic(null);
+                    }
                 }
             }
         });
@@ -154,6 +185,20 @@ public class ReporteController {
             new ReportePDFGenerator().generarReporte("reportes/reporte_ventas_hoy.pdf",
                     "Reporte de ventas del día", encabezados, filas);
             AlertUtil.mostrarInfo("Reportes", "Reporte generado en reportes/reporte_ventas_hoy.pdf");
+        } catch (Exception e) {
+            AlertUtil.mostrarError("Reportes", e.getMessage());
+        }
+    }
+
+    private void anularVenta(Venta venta) {
+        if (!AlertUtil.mostrarConfirmacion("Reportes", "¿Anular la venta #" + venta.getIdVenta() + "?")) {
+            return;
+        }
+        try {
+            int idUsuario = SessionManager.getUsuarioActual().getIdUsuario();
+            ventaService.anularVenta(venta.getIdVenta(), idUsuario);
+            AlertUtil.mostrarInfo("Reportes", "Venta anulada correctamente");
+            cargar();
         } catch (Exception e) {
             AlertUtil.mostrarError("Reportes", e.getMessage());
         }

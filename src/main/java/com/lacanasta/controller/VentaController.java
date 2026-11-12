@@ -173,6 +173,16 @@ public class VentaController {
         seleccionarMetodo(MetodoPago.EFECTIVO);
         cargarProductos();
         actualizarTotales();
+        verificarCajaAbierta();
+    }
+
+    private void verificarCajaAbierta() {
+        boolean abierta = cajaService.getCajaAbierta() != null;
+        btnPagar.setDisable(!abierta);
+        if (!abierta) {
+            AlertUtil.mostrarAdvertencia("Ventas",
+                    "No hay una caja abierta. Abra una caja en el módulo Caja para poder cobrar.");
+        }
     }
 
     private void cargarProductos() {
@@ -388,10 +398,10 @@ public class VentaController {
         }
 
         try {
-            Integer idCaja = null;
             Caja cajaAbierta = cajaService.getCajaAbierta();
-            if (cajaAbierta != null) {
-                idCaja = cajaAbierta.getIdCaja();
+            if (cajaAbierta == null) {
+                AlertUtil.mostrarAdvertencia("Ventas", "Debe abrir una caja antes de registrar una venta.");
+                return;
             }
 
             List<DetalleVenta> detalles = new ArrayList<>();
@@ -403,7 +413,7 @@ public class VentaController {
             }
 
             int idCajero = SessionManager.getUsuarioActual().getIdUsuario();
-            int idVenta = ventaService.registrarVenta(idCajero, idCaja, metodo, detalles);
+            int idVenta = ventaService.registrarVenta(idCajero, cajaAbierta.getIdCaja(), metodo, detalles);
 
             BigDecimal vuelto = BigDecimal.ZERO;
             if (metodo == MetodoPago.EFECTIVO) {

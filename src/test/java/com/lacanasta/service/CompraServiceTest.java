@@ -4,9 +4,11 @@ import com.lacanasta.dao.CompraDAO;
 import com.lacanasta.dao.DetalleCompraDAO;
 import com.lacanasta.dao.KardexDAO;
 import com.lacanasta.dao.ProductoDAO;
+import com.lacanasta.dao.ProveedorDAO;
 import com.lacanasta.model.Compra;
 import com.lacanasta.model.DetalleCompra;
 import com.lacanasta.model.Producto;
+import com.lacanasta.model.Proveedor;
 import com.lacanasta.util.ConnectionProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,6 +48,9 @@ class CompraServiceTest {
     private KardexDAO kardexDAO;
 
     @Mock
+    private ProveedorDAO proveedorDAO;
+
+    @Mock
     private ConnectionProvider connectionProvider;
 
     private CompraService compraService;
@@ -53,7 +58,11 @@ class CompraServiceTest {
     @BeforeEach
     void setUp() throws SQLException {
         when(connectionProvider.getConnection()).thenReturn(mock(Connection.class));
-        compraService = new CompraService(compraDAO, detalleCompraDAO, productoDAO, kardexDAO, connectionProvider);
+        Proveedor proveedor = new Proveedor();
+        proveedor.setIdProveedor(1);
+        proveedor.setEstado(true);
+        when(proveedorDAO.findById(any(Connection.class), eq(1))).thenReturn(proveedor);
+        compraService = new CompraService(compraDAO, detalleCompraDAO, productoDAO, kardexDAO, proveedorDAO, connectionProvider);
     }
 
     @Test

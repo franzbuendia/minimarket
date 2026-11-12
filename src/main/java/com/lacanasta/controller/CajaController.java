@@ -2,8 +2,10 @@ package com.lacanasta.controller;
 
 import com.lacanasta.model.Caja;
 import com.lacanasta.model.MovimientoCaja;
+import com.lacanasta.model.RegistroCaja;
 import com.lacanasta.model.TipoMovimientoCaja;
 import com.lacanasta.model.Usuario;
+import com.lacanasta.model.Venta;
 import com.lacanasta.service.CajaService;
 import com.lacanasta.service.UsuarioService;
 import com.lacanasta.util.AlertUtil;
@@ -22,6 +24,9 @@ import javafx.scene.layout.Region;
 
 import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -73,34 +78,34 @@ public class CajaController {
     private Label lblMetricaMovimientos;
 
     @FXML
-    private TableView<MovimientoCaja> tablaMovimientos;
+    private TableView<RegistroCaja> tablaMovimientos;
 
     @FXML
-    private TableColumn<MovimientoCaja, String> colHora;
+    private TableColumn<RegistroCaja, String> colHora;
 
     @FXML
-    private TableColumn<MovimientoCaja, String> colTipo;
+    private TableColumn<RegistroCaja, String> colTipo;
 
     @FXML
-    private TableColumn<MovimientoCaja, String> colDescripcion;
+    private TableColumn<RegistroCaja, String> colDescripcion;
 
     @FXML
-    private TableColumn<MovimientoCaja, String> colMonto;
+    private TableColumn<RegistroCaja, String> colMonto;
 
-    private final ObservableList<MovimientoCaja> movimientos = FXCollections.observableArrayList();
+    private final ObservableList<RegistroCaja> movimientos = FXCollections.observableArrayList();
     private Caja cajaActual;
 
     @FXML
     private void initialize() {
         colHora.setCellValueFactory(cell -> new ReadOnlyStringWrapper(
-                cell.getValue().getFecha() == null ? "" : cell.getValue().getFecha().format(FMT_HORA)));
-        colTipo.setCellValueFactory(cell -> new ReadOnlyStringWrapper(String.valueOf(cell.getValue().getTipo())));
+                cell.getValue().fecha() == null ? "" : cell.getValue().fecha().format(FMT_HORA)));
+        colTipo.setCellValueFactory(cell -> new ReadOnlyStringWrapper(cell.getValue().tipo()));
         colDescripcion.setCellValueFactory(cell -> new ReadOnlyStringWrapper(
-                cell.getValue().getDescripcion() == null ? "" : cell.getValue().getDescripcion()));
+                cell.getValue().descripcion() == null ? "" : cell.getValue().descripcion()));
         colMonto.setCellValueFactory(cell -> new ReadOnlyStringWrapper(
-                (cell.getValue().getTipo() == TipoMovimientoCaja.INGRESO ? "+ S/ " : "- S/ ")
-                        + cell.getValue().getMonto().toPlainString()));
-        colMonto.setCellFactory(col -> new TableCell<MovimientoCaja, String>() {
+                (cell.getValue().monto().compareTo(BigDecimal.ZERO) >= 0 ? "+ S/ " : "- S/ ")
+                        + cell.getValue().monto().abs().toPlainString()));
+        colMonto.setCellFactory(col -> new TableCell<RegistroCaja, String>() {
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
@@ -109,8 +114,8 @@ public class CajaController {
                     setText(null);
                 } else {
                     setText(item);
-                    MovimientoCaja m = getTableRow().getItem();
-                    getStyleClass().add(m.getTipo() == TipoMovimientoCaja.INGRESO ? "amount-positive" : "amount-negative");
+                    RegistroCaja r = getTableRow().getItem();
+                    getStyleClass().add(r.monto().compareTo(BigDecimal.ZERO) >= 0 ? "amount-positive" : "amount-negative");
                 }
             }
         });
@@ -143,16 +148,25 @@ public class CajaController {
                 lblFechaApertura.setText(descripcionApertura(cajaActual.getUsuarioApertura()));
                 BigDecimal inicial = cajaActual.getMontoInicial() == null ? BigDecimal.ZERO : cajaActual.getMontoInicial();
                 BigDecimal ventas = cajaService.sumarVentas(cajaActual.getIdCaja());
-                movimientos.setAll(cajaService.getMovimientos(cajaActual.getIdCaja()));
+
+                List<RegistroCaja> lista = new ArrayList<>();
+                for (Venta v : cajaService.getVentas(cajaActual.getIdCaja())) {
+                    lista.add(new RegistroCaja(v.getFecha(), "Venta", "Venta #" + v.getIdVenta(), v.getTotal()));
+                }
 
                 BigDecimal neto = BigDecimal.ZERO;
-                for (MovimientoCaja m : movimientos) {
+                for (MovimientoCaja m : cajaService.getMovimientos(cajaActual.getIdCaja())) {
+                    BigDecimal monto = m.getMonto() == null ? BigDecimal.ZERO : m.getMonto();
                     if (m.getTipo() == TipoMovimientoCaja.INGRESO) {
-                        neto = neto.add(m.getMonto());
+                        neto = neto.add(monto);
+                        lista.add(new RegistroCaja(m.getFecha(), "Ingreso", m.getDescripcion(), monto));
                     } else {
-                        neto = neto.subtract(m.getMonto());
+                        neto = neto.subtract(monto);
+                        lista.add(new RegistroCaja(m.getFecha(), "Egreso", m.getDescripcion(), monto.negate()));
                     }
                 }
+                lista.sort(Comparator.comparing(RegistroCaja::fecha, Comparator.nullsLast(Comparator.naturalOrder())));
+                movimientos.setAll(lista);
 
                 lblMetricaInicial.setText("S/ " + inicial.toPlainString());
                 lblMetricaVentas.setText("S/ " + ventas.toPlainString());
@@ -203,6 +217,10 @@ public class CajaController {
         if (resultado.isPresent()) {
             try {
                 BigDecimal montoFinal = new BigDecimal(resultado.get());
+                if (montoFinal.compareTo(BigDecimal.ZERO) < 0) {
+                    AlertUtil.mostrarAdvertencia("Caja", "El monto final no puede ser negativo");
+                    return;
+                }
                 cajaService.cerrarCaja(montoFinal, SessionManager.getUsuarioActual().getIdUsuario());
                 AlertUtil.mostrarInfo("Caja", "Caja cerrada correctamente");
                 refrescar();

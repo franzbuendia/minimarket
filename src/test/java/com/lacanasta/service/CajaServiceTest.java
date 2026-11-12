@@ -5,6 +5,7 @@ import com.lacanasta.dao.MovimientoCajaDAO;
 import com.lacanasta.dao.VentaDAO;
 import com.lacanasta.model.Caja;
 import com.lacanasta.model.EstadoCaja;
+import com.lacanasta.model.TipoMovimientoCaja;
 import com.lacanasta.util.ConnectionProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -58,6 +59,10 @@ class CajaServiceTest {
         caja.setMontoInicial(new BigDecimal("100.00"));
         when(cajaDAO.findCajaAbierta(any(Connection.class))).thenReturn(caja);
         when(ventaDAO.sumTotalByCaja(any(Connection.class), eq(1))).thenReturn(new BigDecimal("250.00"));
+        when(movimientoCajaDAO.sumByTipo(any(Connection.class), eq(1), eq(TipoMovimientoCaja.INGRESO)))
+                .thenReturn(BigDecimal.ZERO);
+        when(movimientoCajaDAO.sumByTipo(any(Connection.class), eq(1), eq(TipoMovimientoCaja.EGRESO)))
+                .thenReturn(BigDecimal.ZERO);
 
         cajaService.cerrarCaja(new BigDecimal("360.00"), 2);
 

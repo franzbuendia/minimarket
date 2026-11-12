@@ -24,6 +24,8 @@ public interface VentaDAO {
 
     BigDecimal sumTotalByCaja(Connection conn, int idCaja) throws SQLException;
 
+    List<Venta> findByCaja(Connection conn, int idCaja) throws SQLException;
+
     int insert(Connection conn, Venta v) throws SQLException;
 
     int updateEstadoPago(Connection conn, int idVenta, EstadoPago estadoPago) throws SQLException;

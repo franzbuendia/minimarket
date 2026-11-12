@@ -62,6 +62,10 @@ public class UsuarioService {
      */
     public void save(Usuario usuario) {
         try (Connection conn = connectionProvider.getConnection()) {
+            String contrasena = usuario.getContrasena();
+            if (contrasena != null && !contrasena.isEmpty() && !PasswordUtil.esHash(contrasena)) {
+                usuario.setContrasena(PasswordUtil.hash(contrasena));
+            }
             if (usuario.getIdUsuario() == 0) {
                 if (usuario.getFechaCreacion() == null) {
                     usuario.setFechaCreacion(LocalDateTime.now());
@@ -100,6 +104,11 @@ public class UsuarioService {
             Usuario usuario = usuarioDAO.findByUsername(conn, username);
             if (usuario != null && usuario.isEstado()
                     && PasswordUtil.verificar(contrasena, usuario.getContrasena())) {
+                String almacenado = usuario.getContrasena();
+                if (almacenado != null && !PasswordUtil.esHash(almacenado)) {
+                    usuario.setContrasena(PasswordUtil.hash(contrasena));
+                    usuarioDAO.update(conn, usuario);
+                }
                 return usuario;
             }
             return null;

@@ -39,7 +39,7 @@ public final class PasswordUtil {
         if (almacenado == null) {
             return false;
         }
-        if (almacenado.startsWith("$2a$") || almacenado.startsWith("$2b$") || almacenado.startsWith("$2y$")) {
+        if (esHash(almacenado)) {
             try {
                 return BCrypt.checkpw(textoPlano, almacenado);
             } catch (IllegalArgumentException e) {
@@ -47,5 +47,16 @@ public final class PasswordUtil {
             }
         }
         return almacenado.equals(textoPlano);
+    }
+
+    /**
+     * Indica si un valor almacenado corresponde a un hash BCrypt.
+     *
+     * @param valor el valor a evaluar.
+     * @return {@code true} si tiene formato de hash BCrypt.
+     */
+    public static boolean esHash(String valor) {
+        return valor != null
+                && (valor.startsWith("$2a$") || valor.startsWith("$2b$") || valor.startsWith("$2y$"));
     }
 }

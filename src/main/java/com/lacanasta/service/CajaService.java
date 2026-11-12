@@ -9,6 +9,8 @@ import com.lacanasta.dao.jdbc.VentaDAOJdbc;
 import com.lacanasta.model.Caja;
 import com.lacanasta.model.EstadoCaja;
 import com.lacanasta.model.MovimientoCaja;
+import com.lacanasta.model.TipoMovimientoCaja;
+import com.lacanasta.model.Venta;
 import com.lacanasta.util.ConnectionProvider;
 import com.lacanasta.util.DatabaseConnection;
 
@@ -132,6 +134,17 @@ public class CajaService {
     }
 
     /**
+     * Lista las ventas en efectivo completadas de una caja.
+     */
+    public List<Venta> getVentas(int idCaja) {
+        try (Connection conn = connectionProvider.getConnection()) {
+            return ventaDAO.findByCaja(conn, idCaja);
+        } catch (SQLException e) {
+            throw new ServiceException("Error al consultar las ventas de caja", e);
+        }
+    }
+
+    /**
      * Cierra el turno de caja actual calculando el monto esperado y la diferencia.
      *
      * <p>El monto esperado se calcula como {@code monto_inicial + SUM(total_ventas)}.
@@ -146,9 +159,11 @@ public class CajaService {
             if (caja == null) {
                 throw new ServiceException("No hay caja abierta para cerrar");
             }
-            BigDecimal totalVentas = ventaDAO.sumTotalByCaja(conn, caja.getIdCaja());
             BigDecimal montoInicial = caja.getMontoInicial() == null ? BigDecimal.ZERO : caja.getMontoInicial();
-            BigDecimal montoEsperado = montoInicial.add(totalVentas);
+            BigDecimal totalVentasEfectivo = ventaDAO.sumTotalByCaja(conn, caja.getIdCaja());
+            BigDecimal ingresos = movimientoCajaDAO.sumByTipo(conn, caja.getIdCaja(), TipoMovimientoCaja.INGRESO);
+            BigDecimal egresos = movimientoCajaDAO.sumByTipo(conn, caja.getIdCaja(), TipoMovimientoCaja.EGRESO);
+            BigDecimal montoEsperado = montoInicial.add(totalVentasEfectivo).add(ingresos).subtract(egresos);
             BigDecimal diferencia = montoFinal.subtract(montoEsperado);
 
             caja.setMontoFinal(montoFinal);

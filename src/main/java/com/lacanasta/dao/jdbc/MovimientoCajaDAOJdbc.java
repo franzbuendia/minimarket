@@ -6,6 +6,7 @@ import com.lacanasta.model.MovimientoCaja;
 import com.lacanasta.model.TipoMovimientoCaja;
 import com.lacanasta.util.JdbcUtil;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -52,6 +53,20 @@ public class MovimientoCajaDAOJdbc implements MovimientoCajaDAO {
             ps.setString(5, m.getDescripcion());
             JdbcUtil.setInteger(ps, 6, m.getIdUsuarioRegistro());
             return ps.executeUpdate();
+        }
+    }
+
+    /**
+     * Suma los montos de los movimientos de caja de un tipo dado.
+     */
+    public BigDecimal sumByTipo(Connection conn, int idCaja, TipoMovimientoCaja tipo) throws SQLException {
+        String sql = "SELECT COALESCE(SUM(monto), 0) FROM movimientos_caja WHERE id_caja = ? AND tipo = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, idCaja);
+            ps.setString(2, tipo.name());
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getBigDecimal(1) : BigDecimal.ZERO;
+            }
         }
     }
 

@@ -19,11 +19,15 @@ INSERT INTO categorias (nombre, descripcion) VALUES
 ('Lácteos', 'Leche, yogurt, queso');
 
 -- Productos (precio_normal y precio_descuento)
-INSERT INTO productos (codigo_barras, nombre, precio_normal, precio_descuento, stock, estado, id_categoria, usuario_creacion) VALUES
-('7891000012345', 'Coca-Cola 1.5L', 4.50, 4.00, 50, 1, 1, 1),
-('7891000056789', 'Fideos Don Vittorio 500g', 3.20, 0.00, 40, 1, 2, 1),
-('7891000098765', 'Lejía Clorox 1L', 5.00, 0.00, 20, 1, 3, 1),
-('7891000032100', 'Leche Gloria 1L', 4.80, 4.50, 30, 1, 4, 1);
+INSERT INTO productos (codigo_barras, nombre, precio_normal, precio_descuento, costo, stock, estado, id_categoria, usuario_creacion) VALUES
+('7891000012345', 'Coca-Cola 1.5L', 4.50, 4.00, 2.80, 50, 1, 1, 1),
+('7891000056789', 'Fideos Don Vittorio 500g', 3.20, 0.00, 1.90, 40, 1, 2, 1),
+('7891000098765', 'Lejía Clorox 1L', 5.00, 0.00, 3.10, 20, 1, 3, 1),
+('7891000032100', 'Leche Gloria 1L', 4.80, 4.50, 3.40, 30, 1, 4, 1);
+
+-- Proveedores (al menos uno activo para registrar compras)
+INSERT INTO proveedores (nombre, contacto, telefono, direccion, estado, usuario_creacion) VALUES
+('Distribuidora Alimentaria S.A.', 'Juan Pérez', '999111222', 'Av. Industrial 456', 1, 1);
 
 -- Configuración de la empresa (singleton)
 INSERT INTO empresa_configuracion (id_config, nombre_comercial, ruc, direccion, telefono, mensaje_ticket) VALUES

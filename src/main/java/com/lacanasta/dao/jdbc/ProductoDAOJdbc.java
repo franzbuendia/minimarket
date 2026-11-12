@@ -11,6 +11,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -182,6 +183,22 @@ public class ProductoDAOJdbc implements ProductoDAO {
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setBigDecimal(1, costo);
             ps.setInt(2, idProducto);
+            return ps.executeUpdate();
+        }
+    }
+
+    /**
+     * Actualiza stock, costo y auditoría de modificación de un producto.
+     */
+    public int updateStockCosto(Connection conn, int idProducto, int stock, BigDecimal costo, Integer usuarioModificacion) throws SQLException {
+        String sql = "UPDATE productos SET stock = ?, costo = ?, usuario_modificacion = ?, fecha_modificacion = ? "
+                + "WHERE id_producto = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, stock);
+            ps.setBigDecimal(2, costo);
+            JdbcUtil.setInteger(ps, 3, usuarioModificacion);
+            JdbcUtil.setLocalDateTime(ps, 4, LocalDateTime.now());
+            ps.setInt(5, idProducto);
             return ps.executeUpdate();
         }
     }

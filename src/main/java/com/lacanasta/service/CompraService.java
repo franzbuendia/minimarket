@@ -4,14 +4,17 @@ import com.lacanasta.dao.CompraDAO;
 import com.lacanasta.dao.DetalleCompraDAO;
 import com.lacanasta.dao.KardexDAO;
 import com.lacanasta.dao.ProductoDAO;
+import com.lacanasta.dao.ProveedorDAO;
 import com.lacanasta.dao.jdbc.CompraDAOJdbc;
 import com.lacanasta.dao.jdbc.DetalleCompraDAOJdbc;
 import com.lacanasta.dao.jdbc.KardexDAOJdbc;
 import com.lacanasta.dao.jdbc.ProductoDAOJdbc;
+import com.lacanasta.dao.jdbc.ProveedorDAOJdbc;
 import com.lacanasta.model.Compra;
 import com.lacanasta.model.DetalleCompra;
 import com.lacanasta.model.Kardex;
 import com.lacanasta.model.Producto;
+import com.lacanasta.model.Proveedor;
 import com.lacanasta.model.TipoMovimiento;
 import com.lacanasta.util.ConnectionProvider;
 import com.lacanasta.util.DatabaseConnection;
@@ -34,6 +37,7 @@ public class CompraService {
     private final DetalleCompraDAO detalleCompraDAO;
     private final ProductoDAO productoDAO;
     private final KardexDAO kardexDAO;
+    private final ProveedorDAO proveedorDAO;
     private final ConnectionProvider connectionProvider;
     private final TransactionTemplate transactionTemplate;
 
@@ -41,18 +45,20 @@ public class CompraService {
      * Constructor por defecto que crea las dependencias reales.
      */
     public CompraService() {
-        this(new CompraDAOJdbc(), new DetalleCompraDAOJdbc(), new ProductoDAOJdbc(), new KardexDAOJdbc(), new DatabaseConnection());
+        this(new CompraDAOJdbc(), new DetalleCompraDAOJdbc(), new ProductoDAOJdbc(), new KardexDAOJdbc(), new ProveedorDAOJdbc(), new DatabaseConnection());
     }
 
     /**
      * Constructor para inyección de dependencias (pruebas).
      */
     public CompraService(CompraDAO compraDAO, DetalleCompraDAO detalleCompraDAO,
-                         ProductoDAO productoDAO, KardexDAO kardexDAO, ConnectionProvider connectionProvider) {
+                         ProductoDAO productoDAO, KardexDAO kardexDAO, ProveedorDAO proveedorDAO,
+                         ConnectionProvider connectionProvider) {
         this.compraDAO = compraDAO;
         this.detalleCompraDAO = detalleCompraDAO;
         this.productoDAO = productoDAO;
         this.kardexDAO = kardexDAO;
+        this.proveedorDAO = proveedorDAO;
         this.connectionProvider = connectionProvider;
         this.transactionTemplate = new TransactionTemplate(connectionProvider);
     }
@@ -67,8 +73,22 @@ public class CompraService {
      */
     public int registrarCompra(int idProveedor, Integer idUsuarioRegistro, List<DetalleCompra> detalles) {
         return transactionTemplate.execute(conn -> {
+            if (detalles == null || detalles.isEmpty()) {
+                throw new ServiceException("Debe agregar al menos una línea al detalle de la compra");
+            }
+            Proveedor proveedor = proveedorDAO.findById(conn, idProveedor);
+            if (proveedor == null || !proveedor.isEstado()) {
+                throw new ServiceException("El proveedor seleccionado no existe o está inactivo");
+            }
+
             BigDecimal total = BigDecimal.ZERO;
             for (DetalleCompra d : detalles) {
+                if (d.getCantidad() <= 0) {
+                    throw new ServiceException("La cantidad debe ser mayor a cero");
+                }
+                if (d.getCostoUnitario() == null || d.getCostoUnitario().compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new ServiceException("El costo unitario debe ser mayor a cero");
+                }
                 BigDecimal subtotal = d.getCostoUnitario()
                         .multiply(BigDecimal.valueOf(d.getCantidad()));
                 d.setSubtotal(subtotal);
@@ -92,8 +112,8 @@ public class CompraService {
                 }
                 int stockAnterior = producto.getStock();
                 int stockResultante = stockAnterior + d.getCantidad();
-                productoDAO.updateStock(conn, producto.getIdProducto(), stockResultante);
-                productoDAO.updateCosto(conn, producto.getIdProducto(), d.getCostoUnitario());
+                productoDAO.updateStockCosto(conn, producto.getIdProducto(), stockResultante,
+                        d.getCostoUnitario(), idUsuarioRegistro);
 
                 Kardex kardex = new Kardex();
                 kardex.setIdProducto(producto.getIdProducto());

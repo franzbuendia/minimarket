@@ -1,9 +1,11 @@
 package com.lacanasta.service;
 
+import com.lacanasta.dao.CajaDAO;
 import com.lacanasta.dao.DetalleVentaDAO;
 import com.lacanasta.dao.KardexDAO;
 import com.lacanasta.dao.ProductoDAO;
 import com.lacanasta.dao.VentaDAO;
+import com.lacanasta.model.Caja;
 import com.lacanasta.model.DetalleVenta;
 import com.lacanasta.model.MetodoPago;
 import com.lacanasta.model.Producto;
@@ -49,6 +51,9 @@ class VentaServiceTest {
     private KardexDAO kardexDAO;
 
     @Mock
+    private CajaDAO cajaDAO;
+
+    @Mock
     private ConnectionProvider connectionProvider;
 
     private VentaService ventaService;
@@ -56,7 +61,11 @@ class VentaServiceTest {
     @BeforeEach
     void setUp() throws SQLException {
         when(connectionProvider.getConnection()).thenReturn(mock(Connection.class));
-        ventaService = new VentaService(ventaDAO, detalleVentaDAO, productoDAO, kardexDAO, connectionProvider);
+        Caja cajaAbierta = new Caja();
+        cajaAbierta.setIdCaja(3);
+        cajaAbierta.setMontoInicial(BigDecimal.ZERO);
+        when(cajaDAO.findCajaAbierta(any(Connection.class))).thenReturn(cajaAbierta);
+        ventaService = new VentaService(ventaDAO, detalleVentaDAO, productoDAO, kardexDAO, cajaDAO, connectionProvider);
     }
 
     private Producto producto(int id, String precioNormal, String precioDescuento, int stock) {

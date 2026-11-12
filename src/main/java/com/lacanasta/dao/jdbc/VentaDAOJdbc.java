@@ -123,13 +123,32 @@ public class VentaDAOJdbc implements VentaDAO {
      * Calcula la suma de los totales de las ventas completadas de una caja.
      */
     public BigDecimal sumTotalByCaja(Connection conn, int idCaja) throws SQLException {
-        String sql = "SELECT COALESCE(SUM(total), 0) FROM ventas WHERE id_caja = ? AND estado_pago = 'COMPLETADA'";
+        String sql = "SELECT COALESCE(SUM(total), 0) FROM ventas "
+                + "WHERE id_caja = ? AND metodo_pago = 'EFECTIVO' AND estado_pago = 'COMPLETADA'";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, idCaja);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next() ? rs.getBigDecimal(1) : BigDecimal.ZERO;
             }
         }
+    }
+
+    /**
+     * Lista las ventas en efectivo completadas de una caja.
+     */
+    public List<Venta> findByCaja(Connection conn, int idCaja) throws SQLException {
+        String sql = "SELECT " + COLUMNS + " FROM ventas "
+                + "WHERE id_caja = ? AND metodo_pago = 'EFECTIVO' AND estado_pago = 'COMPLETADA' ORDER BY fecha";
+        List<Venta> list = new ArrayList<>();
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, idCaja);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(map(rs));
+                }
+            }
+        }
+        return list;
     }
 
     /**

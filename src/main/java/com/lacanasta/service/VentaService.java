@@ -1,13 +1,16 @@
 package com.lacanasta.service;
 
+import com.lacanasta.dao.CajaDAO;
 import com.lacanasta.dao.DetalleVentaDAO;
 import com.lacanasta.dao.KardexDAO;
 import com.lacanasta.dao.ProductoDAO;
 import com.lacanasta.dao.VentaDAO;
+import com.lacanasta.dao.jdbc.CajaDAOJdbc;
 import com.lacanasta.dao.jdbc.DetalleVentaDAOJdbc;
 import com.lacanasta.dao.jdbc.KardexDAOJdbc;
 import com.lacanasta.dao.jdbc.ProductoDAOJdbc;
 import com.lacanasta.dao.jdbc.VentaDAOJdbc;
+import com.lacanasta.model.Caja;
 import com.lacanasta.model.DetalleVenta;
 import com.lacanasta.model.EstadoPago;
 import com.lacanasta.model.Kardex;
@@ -37,6 +40,7 @@ public class VentaService {
     private final DetalleVentaDAO detalleVentaDAO;
     private final ProductoDAO productoDAO;
     private final KardexDAO kardexDAO;
+    private final CajaDAO cajaDAO;
     private final ConnectionProvider connectionProvider;
     private final TransactionTemplate transactionTemplate;
 
@@ -44,18 +48,20 @@ public class VentaService {
      * Constructor por defecto que crea las dependencias reales.
      */
     public VentaService() {
-        this(new VentaDAOJdbc(), new DetalleVentaDAOJdbc(), new ProductoDAOJdbc(), new KardexDAOJdbc(), new DatabaseConnection());
+        this(new VentaDAOJdbc(), new DetalleVentaDAOJdbc(), new ProductoDAOJdbc(), new KardexDAOJdbc(), new CajaDAOJdbc(), new DatabaseConnection());
     }
 
     /**
      * Constructor para inyección de dependencias (pruebas).
      */
     public VentaService(VentaDAO ventaDAO, DetalleVentaDAO detalleVentaDAO,
-                        ProductoDAO productoDAO, KardexDAO kardexDAO, ConnectionProvider connectionProvider) {
+                        ProductoDAO productoDAO, KardexDAO kardexDAO, CajaDAO cajaDAO,
+                        ConnectionProvider connectionProvider) {
         this.ventaDAO = ventaDAO;
         this.detalleVentaDAO = detalleVentaDAO;
         this.productoDAO = productoDAO;
         this.kardexDAO = kardexDAO;
+        this.cajaDAO = cajaDAO;
         this.connectionProvider = connectionProvider;
         this.transactionTemplate = new TransactionTemplate(connectionProvider);
     }
@@ -84,6 +90,11 @@ public class VentaService {
     public int registrarVenta(int idCajero, Integer idCaja, MetodoPago metodoPago,
                               List<DetalleVenta> detalles, BigDecimal montoRecibido) {
         return transactionTemplate.execute(conn -> {
+            Caja cajaAbierta = cajaDAO.findCajaAbierta(conn);
+            if (cajaAbierta == null) {
+                throw new ServiceException("Debe abrir una caja antes de registrar una venta.");
+            }
+
             BigDecimal total = BigDecimal.ZERO;
             for (DetalleVenta d : detalles) {
                 Producto producto = productoDAO.findById(conn, d.getIdProducto());
@@ -108,7 +119,7 @@ public class VentaService {
 
             Venta venta = new Venta();
             venta.setIdCajero(idCajero);
-            venta.setIdCaja(idCaja);
+            venta.setIdCaja(cajaAbierta.getIdCaja());
             venta.setFecha(LocalDateTime.now());
             venta.setTotal(total);
             venta.setMetodoPago(metodoPago);
@@ -131,7 +142,7 @@ public class VentaService {
                 kardex.setTipoMovimiento(TipoMovimiento.SALIDA);
                 kardex.setReferencia("VENTA_#" + idVenta);
                 kardex.setCantidad(d.getCantidad());
-                kardex.setCostoUnitario(producto.getCosto());
+                kardex.setCostoUnitario(producto.getCosto() == null ? BigDecimal.ZERO : producto.getCosto());
                 kardex.setStockAnterior(stockAnterior);
                 kardex.setStockResultante(stockResultante);
                 kardexDAO.insert(conn, kardex);
@@ -219,8 +230,8 @@ public class VentaService {
             if (venta == null) {
                 throw new ServiceException("Venta no encontrada");
             }
-            if (venta.getEstadoPago() == EstadoPago.ANULADA) {
-                throw new ServiceException("La venta ya está anulada");
+            if (venta.getEstadoPago() != EstadoPago.COMPLETADA) {
+                throw new ServiceException("La venta no se puede anular porque no está completada");
             }
 
             List<DetalleVenta> detalles = detalleVentaDAO.findByVenta(conn, idVenta);
@@ -237,7 +248,7 @@ public class VentaService {
                 kardex.setTipoMovimiento(TipoMovimiento.ENTRADA);
                 kardex.setReferencia("ANULACION_VENTA_#" + idVenta);
                 kardex.setCantidad(d.getCantidad());
-                kardex.setCostoUnitario(d.getPrecioUnitario());
+                kardex.setCostoUnitario(producto.getCosto() == null ? BigDecimal.ZERO : producto.getCosto());
                 kardex.setStockAnterior(stockAnterior);
                 kardex.setStockResultante(stockResultante);
                 kardexDAO.insert(conn, kardex);
