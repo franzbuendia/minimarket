@@ -1,58 +1,263 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
 
 <VBox spacing="18.0" styleClass="module"
       xmlns="http://javafx.com/javafx/21"
       xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.lacanasta.controller.ConfigController">
 
+    <!-- Cabecera del módulo -->
     <HBox alignment="BOTTOM_LEFT" spacing="12.0">
         <VBox spacing="3.0" HBox.hgrow="ALWAYS">
-            <Label text="PREFERENCIAS" styleClass="eyebrow"/>
-            <Label text="Configuración" styleClass="page-title"/>
-            <Label text="Personaliza los datos de tu negocio." styleClass="page-description"/>
+            <Label text="PREFERENCIAS &amp; SISTEMA" styleClass="eyebrow"/>
+            <Label text="Configuración General" styleClass="page-title"/>
+            <Label text="Personaliza la identidad fiscal de tu negocio, boletas, control de caja y motor de datos." styleClass="page-description"/>
         </VBox>
-        <Button text="Guardar cambios" onAction="#onGuardar" styleClass="btn, btn-primary"/>
+        <Button text="Guardar cambios" onAction="#onGuardar" styleClass="btn, btn-primary">
+            <graphic>
+                <FontIcon iconLiteral="fas-check-circle" iconSize="15" iconColor="white"/>
+            </graphic>
+        </Button>
     </HBox>
 
+    <!-- Layout principal: pestañas laterales + contenido dinámico -->
     <HBox spacing="18.0" VBox.vgrow="ALWAYS">
-        <VBox prefWidth="200.0" spacing="4.0">
-            <Button fx:id="btnDatosNegocio" text="Datos del negocio" onAction="#onDatosNegocio" styleClass="settings-link, active"/>
-            <Button fx:id="btnComprobantes" text="Comprobantes" onAction="#onComprobantes" styleClass="settings-link"/>
-            <Button fx:id="btnVentasCaja" text="Ventas y caja" onAction="#onVentasCaja" styleClass="settings-link"/>
-            <Button fx:id="btnPreferencias" text="Preferencias" onAction="#onPreferencias" styleClass="settings-link"/>
+        
+        <!-- Menú de pestañas laterales -->
+        <VBox prefWidth="230.0" minWidth="230.0" spacing="6.0">
+            <Button fx:id="btnDatosNegocio" text="Datos del negocio" onAction="#onDatosNegocio" maxWidth="Infinity" styleClass="settings-link, active">
+                <graphic>
+                    <FontIcon iconLiteral="fas-store" iconSize="15"/>
+                </graphic>
+            </Button>
+            <Button fx:id="btnComprobantes" text="Comprobantes y Ticket" onAction="#onComprobantes" maxWidth="Infinity" styleClass="settings-link">
+                <graphic>
+                    <FontIcon iconLiteral="fas-receipt" iconSize="15"/>
+                </graphic>
+            </Button>
+            <Button fx:id="btnVentasCaja" text="Ventas y caja" onAction="#onVentasCaja" maxWidth="Infinity" styleClass="settings-link">
+                <graphic>
+                    <FontIcon iconLiteral="fas-cash-register" iconSize="15"/>
+                </graphic>
+            </Button>
+            <Button fx:id="btnPreferencias" text="Base de datos y sistema" onAction="#onPreferencias" maxWidth="Infinity" styleClass="settings-link">
+                <graphic>
+                    <FontIcon iconLiteral="fas-server" iconSize="15"/>
+                </graphic>
+            </Button>
         </VBox>
 
-        <VBox HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
-            <VBox styleClass="card" VBox.vgrow="ALWAYS">
-                <HBox styleClass="card-header">
+        <!-- Contenedor dinámico de paneles -->
+        <StackPane fx:id="panelContenido" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+
+            <!-- PANEL 1: DATOS DEL NEGOCIO -->
+            <VBox fx:id="panelDatosNegocio" styleClass="card" VBox.vgrow="ALWAYS" spacing="16.0">
+                <HBox styleClass="card-header" alignment="CENTER_LEFT">
                     <VBox spacing="2.0">
-                        <Label text="Datos del negocio" styleClass="card-title"/>
-                        <Label text="Esta información aparecerá en tus comprobantes." styleClass="card-subtitle"/>
+                        <Label text="Identidad del Establecimiento" styleClass="card-title"/>
+                        <Label text="Esta información oficial aparecerá en las boletas, tickets y reportes fiscales." styleClass="card-subtitle"/>
                     </VBox>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label text="Datos Fiscales" styleClass="badge, badge-info"/>
                 </HBox>
-                <GridPane styleClass="form-grid" hgap="18.0" vgap="18.0">
-                    <Label text="Nombre comercial" styleClass="form-label" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-                    <TextField fx:id="txtNombreComercial" GridPane.rowIndex="0" GridPane.columnIndex="1" prefWidth="280.0"/>
-                    <Label text="RUC" styleClass="form-label" GridPane.rowIndex="0" GridPane.columnIndex="2"/>
-                    <TextField fx:id="txtRuc" GridPane.rowIndex="0" GridPane.columnIndex="3"/>
 
-                    <Label text="Dirección" styleClass="form-label" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-                    <TextField fx:id="txtDireccion" GridPane.rowIndex="1" GridPane.columnIndex="1" GridPane.columnSpan="3"/>
+                <GridPane styleClass="form-grid" hgap="18.0" vgap="18.0" VBox.vgrow="ALWAYS">
+                    <Label text="Nombre comercial:" styleClass="form-label" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                    <TextField fx:id="txtNombreComercial" promptText="Ej. Minimarket La Canasta" styleClass="field" GridPane.rowIndex="0" GridPane.columnIndex="1" prefWidth="280.0"/>
 
-                    <Label text="Teléfono" styleClass="form-label" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
-                    <TextField fx:id="txtTelefono" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
-                    <Label text="Mensaje de ticket" styleClass="form-label" GridPane.rowIndex="2" GridPane.columnIndex="2"/>
-                    <TextField fx:id="txtMensajeTicket" GridPane.rowIndex="2" GridPane.columnIndex="3"/>
+                    <Label text="R.U.C.:" styleClass="form-label" GridPane.rowIndex="0" GridPane.columnIndex="2"/>
+                    <TextField fx:id="txtRuc" promptText="11 dígitos" styleClass="field" GridPane.rowIndex="0" GridPane.columnIndex="3" prefWidth="200.0"/>
+
+                    <Label text="Dirección fiscal:" styleClass="form-label" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                    <TextField fx:id="txtDireccion" promptText="Av. Principal 123" styleClass="field" GridPane.rowIndex="1" GridPane.columnIndex="1" GridPane.columnSpan="3"/>
+
+                    <Label text="Teléfono / Celular:" styleClass="form-label" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                    <TextField fx:id="txtTelefono" promptText="Ej. 999 888 777" styleClass="field" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+                    <Label text="Ciudad / Departamento:" styleClass="form-label" GridPane.rowIndex="2" GridPane.columnIndex="2"/>
+                    <TextField fx:id="txtCiudad" promptText="Lima, Perú" text="Lima, Perú" styleClass="field" GridPane.rowIndex="2" GridPane.columnIndex="3"/>
+
+                    <Label text="Correo de contacto:" styleClass="form-label" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+                    <TextField fx:id="txtEmail" promptText="ventas@lacanasta.com" text="contacto@lacanasta.com" styleClass="field" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+
+                    <Label text="Giro de negocio:" styleClass="form-label" GridPane.rowIndex="3" GridPane.columnIndex="2"/>
+                    <TextField fx:id="txtGiro" promptText="Minimarket y Abarrotes" text="Venta minorista de alimentos y bebidas" styleClass="field" GridPane.rowIndex="3" GridPane.columnIndex="3"/>
                 </GridPane>
             </VBox>
-        </VBox>
+
+            <!-- PANEL 2: COMPROBANTES Y TICKET (CON VISTA PREVIA TÉRMICA EN VIVO) -->
+            <VBox fx:id="panelComprobantes" styleClass="card" VBox.vgrow="ALWAYS" spacing="16.0" visible="false" managed="false">
+                <HBox styleClass="card-header" alignment="CENTER_LEFT">
+                    <VBox spacing="2.0">
+                        <Label text="Formato de Impresión y Ticket" styleClass="card-title"/>
+                        <Label text="Configura el mensaje de despedida y revisa la vista previa en tiempo real del ticket." styleClass="card-subtitle"/>
+                    </VBox>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label text="Vista Previa Activa" styleClass="badge, badge-success"/>
+                </HBox>
+
+                <HBox spacing="24.0" VBox.vgrow="ALWAYS" alignment="TOP_LEFT">
+                    <!-- Formulario de configuración de ticket -->
+                    <VBox spacing="16.0" HBox.hgrow="ALWAYS" styleClass="form-grid">
+                        <Label text="Mensaje de pie de ticket (Agradecimiento):" styleClass="form-label"/>
+                        <TextField fx:id="txtMensajeTicket" promptText="¡Gracias por su compra! Vuelva pronto." styleClass="field" maxWidth="Infinity"/>
+
+                        <Label text="Tipo de comprobante predeterminado:" styleClass="form-label"/>
+                        <ComboBox fx:id="cmbTipoComprobante" maxWidth="Infinity"/>
+
+                        <HBox spacing="14.0">
+                            <VBox spacing="6.0" HBox.hgrow="ALWAYS">
+                                <Label text="Símbolo de moneda:" styleClass="form-label"/>
+                                <TextField fx:id="txtMoneda" text="S/ (Soles)" editable="false" styleClass="field"/>
+                            </VBox>
+                            <VBox spacing="6.0" HBox.hgrow="ALWAYS">
+                                <Label text="Impuesto IGV (%):" styleClass="form-label"/>
+                                <TextField fx:id="txtIgv" text="18 %" editable="false" styleClass="field"/>
+                            </VBox>
+                        </HBox>
+
+                        <Region prefHeight="10.0"/>
+                        <Label text="Ancho de papel de impresora térmica:" styleClass="form-label"/>
+                        <ComboBox fx:id="cmbAnchoPapel" maxWidth="Infinity"/>
+                    </VBox>
+
+                    <!-- Vista previa en vivo del Ticket Térmico -->
+                    <VBox prefWidth="290.0" minWidth="290.0" spacing="8.0" styleClass="ticket-preview-box">
+                        <Label fx:id="lblTicketStore" text="LA CANASTA" styleClass="ticket-header-title" maxWidth="Infinity"/>
+                        <Label fx:id="lblTicketRuc" text="RUC: 12345678901" styleClass="ticket-text-mono" maxWidth="Infinity"/>
+                        <Label fx:id="lblTicketDireccion" text="Av. Principal 123" styleClass="ticket-text-mono" maxWidth="Infinity"/>
+                        <Label fx:id="lblTicketTelefono" text="Tel: 999888777" styleClass="ticket-text-mono" maxWidth="Infinity"/>
+
+                        <Region styleClass="ticket-divider"/>
+                        <Label text="BOLETA DE VENTA: B001-000421" styleClass="ticket-text-mono" maxWidth="Infinity"/>
+                        <Label text="FECHA: 11/11/2026 21:40" styleClass="ticket-text-mono" maxWidth="Infinity"/>
+                        <Label text="CAJERO: Cajero Principal" styleClass="ticket-text-mono" maxWidth="Infinity"/>
+
+                        <Region styleClass="ticket-divider"/>
+                        <HBox>
+                            <Label text="CANT. DESCRIPCIÓN" styleClass="ticket-text-left" HBox.hgrow="ALWAYS"/>
+                            <Label text="TOTAL" styleClass="ticket-text-mono"/>
+                        </HBox>
+                        <HBox>
+                            <Label text="1x Coca-Cola 1.5L" styleClass="ticket-text-left" HBox.hgrow="ALWAYS"/>
+                            <Label text="S/ 7.50" styleClass="ticket-text-mono"/>
+                        </HBox>
+                        <HBox>
+                            <Label text="2x Leche Gloria 1L" styleClass="ticket-text-left" HBox.hgrow="ALWAYS"/>
+                            <Label text="S/ 8.40" styleClass="ticket-text-mono"/>
+                        </HBox>
+
+                        <Region styleClass="ticket-divider"/>
+                        <HBox>
+                            <Label text="SUBTOTAL:" styleClass="ticket-text-left" HBox.hgrow="ALWAYS"/>
+                            <Label text="S/ 13.47" styleClass="ticket-text-mono"/>
+                        </HBox>
+                        <HBox>
+                            <Label text="I.G.V. (18%):" styleClass="ticket-text-left" HBox.hgrow="ALWAYS"/>
+                            <Label text="S/ 2.43" styleClass="ticket-text-mono"/>
+                        </HBox>
+                        <HBox>
+                            <Label text="TOTAL A PAGAR:" styleClass="ticket-header-title" HBox.hgrow="ALWAYS"/>
+                            <Label text="S/ 15.90" styleClass="ticket-header-title"/>
+                        </HBox>
+
+                        <Region styleClass="ticket-divider"/>
+                        <Label fx:id="lblTicketMensaje" text="¡Gracias por su compra!" styleClass="ticket-footer-text" maxWidth="Infinity" wrapText="true"/>
+                    </VBox>
+                </HBox>
+            </VBox>
+
+            <!-- PANEL 3: VENTAS Y CAJA -->
+            <VBox fx:id="panelVentasCaja" styleClass="card" VBox.vgrow="ALWAYS" spacing="16.0" visible="false" managed="false">
+                <HBox styleClass="card-header" alignment="CENTER_LEFT">
+                    <VBox spacing="2.0">
+                        <Label text="Control de Operaciones y Caja" styleClass="card-title"/>
+                        <Label text="Reglas de cobro, montos de apertura y alertas de inventario bajo." styleClass="card-subtitle"/>
+                    </VBox>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label text="Reglas de Venta" styleClass="badge, badge-warning"/>
+                </HBox>
+
+                <GridPane styleClass="form-grid" hgap="20.0" vgap="18.0" VBox.vgrow="ALWAYS">
+                    <Label text="Monto sugerido para apertura de caja:" styleClass="form-label" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                    <TextField fx:id="txtAperturaCaja" text="100.00" styleClass="field" GridPane.rowIndex="0" GridPane.columnIndex="1" prefWidth="200.0"/>
+
+                    <Label text="Alerta de stock bajo (umbral mínimo):" styleClass="form-label" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                    <TextField fx:id="txtUmbralStock" text="5" styleClass="field" GridPane.rowIndex="1" GridPane.columnIndex="1" prefWidth="200.0"/>
+
+                    <Label text="Exigir apertura de caja para vender:" styleClass="form-label" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                    <CheckBox fx:id="chkExigirCaja" selected="true" text="Bloquear ventas si la caja del día está cerrada" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+                    <Label text="Permitir venta de productos sin stock:" styleClass="form-label" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+                    <CheckBox fx:id="chkPermitirSinStock" selected="false" text="Permitir registrar ventas con inventario en cero o negativo" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+
+                    <Label text="Emisión automática de ticket:" styleClass="form-label" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+                    <CheckBox fx:id="chkAutoTicket" selected="true" text="Generar e imprimir comprobante inmediatamente al cobrar" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+                </GridPane>
+            </VBox>
+
+            <!-- PANEL 4: BASE DE DATOS Y SISTEMA -->
+            <VBox fx:id="panelPreferencias" styleClass="card" VBox.vgrow="ALWAYS" spacing="16.0" visible="false" managed="false">
+                <HBox styleClass="card-header" alignment="CENTER_LEFT">
+                    <VBox spacing="2.0">
+                        <Label text="Infraestructura y Base de Datos" styleClass="card-title"/>
+                        <Label text="Verificación de conectividad MySQL, estado del servidor y optimización." styleClass="card-subtitle"/>
+                    </VBox>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="lblBadgeDb" text="EN LÍNEA" styleClass="badge, badge-success"/>
+                </HBox>
+
+                <VBox spacing="16.0" styleClass="form-grid" VBox.vgrow="ALWAYS">
+                    <HBox spacing="16.0" alignment="CENTER_LEFT" styleClass="db-status-card">
+                        <StackPane styleClass="topbar-icon-pill">
+                            <FontIcon iconLiteral="fas-server" iconSize="22" iconColor="#10b981"/>
+                        </StackPane>
+                        <VBox spacing="3.0" HBox.hgrow="ALWAYS">
+                            <Label text="Servidor MySQL Conectado y Operativo" styleClass="role-name"/>
+                            <Label fx:id="lblDbDetalles" text="Host: localhost:3306 • BD: minimarket • Driver: com.mysql.cj.jdbc.Driver" styleClass="card-subtitle"/>
+                        </VBox>
+                        <Label text="Operativo 100%" styleClass="db-status-badge"/>
+                    </HBox>
+
+                    <GridPane hgap="16.0" vgap="12.0">
+                        <Label text="Motor de almacenamiento:" styleClass="form-label" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                        <Label text="MySQL 8.0 (InnoDB transaccional)" styleClass="code-text" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+                        <Label text="Juego de caracteres:" styleClass="form-label" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                        <Label text="utf8mb4 (Soporte completo internacional)" styleClass="code-text" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+                        <Label text="Tiempo de respuesta:" styleClass="form-label" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                        <Label fx:id="lblLatencia" text="&lt; 5 ms (Excelente rendimiento local)" styleClass="code-text" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+                    </GridPane>
+
+                    <Region prefHeight="10.0"/>
+                    <HBox spacing="12.0">
+                        <Button fx:id="btnProbarConexion" text="Probar conexión ahora" onAction="#onProbarConexion" styleClass="btn, btn-outline">
+                            <graphic>
+                                <FontIcon iconLiteral="fas-sync-alt" iconSize="14"/>
+                            </graphic>
+                        </Button>
+                        <Button text="Optimizar tablas de datos" onAction="#onOptimizarTablas" styleClass="btn, btn-soft">
+                            <graphic>
+                                <FontIcon iconLiteral="fas-tachometer-alt" iconSize="14"/>
+                            </graphic>
+                        </Button>
+                    </HBox>
+                </VBox>
+            </VBox>
+
+        </StackPane>
     </HBox>
 
 </VBox>
