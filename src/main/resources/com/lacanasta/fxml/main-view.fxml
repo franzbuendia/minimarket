@@ -9,25 +9,36 @@
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
 
 <BorderPane fx:id="rootPane" xmlns="http://javafx.com/javafx/21"
             xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="com.lacanasta.controller.MainController">
 
+    <!-- BARRA LATERAL (SIDEBAR) -->
     <left>
         <VBox styleClass="sidebar">
-            <VBox alignment="CENTER" style="-fx-padding: 8 10 12 10;">
-                <ImageView fitWidth="200" preserveRatio="true">
-                    <image>
-                        <Image url="file:///C:/trabajos%20universitarios%20completos/IntegradorAvances/Logo%20de%20supermercado%20La%20Canasta.png" />
-                    </image>
-                </ImageView>
+            
+            <!-- Contenedor del Logo de Supermercado -->
+            <VBox alignment="CENTER" styleClass="sidebar-brand-box">
+                <StackPane styleClass="sidebar-brand-card">
+                    <ImageView fitWidth="180" preserveRatio="true">
+                        <image>
+                            <Image url="@/images/logo-supermercado.png"/>
+                        </image>
+                    </ImageView>
+                </StackPane>
             </VBox>
 
+            <!-- Lista de Pestañas / Navegación -->
             <VBox styleClass="nav-list" VBox.vgrow="ALWAYS">
+                <Label text="OPERACIONES" styleClass="nav-section-title"/>
                 <Button fx:id="btnVentas" maxWidth="Infinity" styleClass="nav-item" onAction="#abrirVentas"/>
                 <Button fx:id="btnCaja" maxWidth="Infinity" styleClass="nav-item" onAction="#abrirCaja"/>
                 <Button fx:id="btnReportes" maxWidth="Infinity" styleClass="nav-item" onAction="#abrirReportes"/>
+
+                <Region prefHeight="10.0"/>
+                <Label text="ADMINISTRACIÓN" styleClass="nav-section-title"/>
                 <Button fx:id="btnProductos" maxWidth="Infinity" styleClass="nav-item" onAction="#abrirProductos"/>
                 <Button fx:id="btnCompras" maxWidth="Infinity" styleClass="nav-item" onAction="#abrirCompras"/>
                 <Button fx:id="btnProveedores" maxWidth="Infinity" styleClass="nav-item" onAction="#abrirProveedores"/>
@@ -35,41 +46,60 @@
                 <Button fx:id="btnConfiguracion" maxWidth="Infinity" styleClass="nav-item" onAction="#abrirConfiguracion"/>
             </VBox>
 
+            <!-- Pie de barra lateral con información de la sucursal -->
             <VBox styleClass="sidebar-footer">
                 <HBox styleClass="store-chip" alignment="CENTER_LEFT">
                     <StackPane styleClass="store-avatar">
                         <Label text="LC"/>
                     </StackPane>
-                    <VBox alignment="CENTER_LEFT">
-                        <Label text="Local Principal" styleClass="store-name"/>
-                        <Label text="En línea" styleClass="store-status"/>
+                    <VBox alignment="CENTER_LEFT" spacing="1.0">
+                        <Label text="Supermercado La Canasta" styleClass="store-name"/>
+                        <HBox alignment="CENTER_LEFT" spacing="5.0">
+                            <FontIcon iconLiteral="fas-circle" iconSize="7" iconColor="#10b981"/>
+                            <Label text="En línea • Sucursal 01" styleClass="store-status"/>
+                        </HBox>
                     </VBox>
                 </HBox>
-                <Label text="POS v2.4.0" styleClass="version"/>
             </VBox>
         </VBox>
     </left>
 
+    <!-- ÁREA PRINCIPAL -->
     <center>
         <BorderPane>
+            <!-- Barra Superior (Topbar) -->
             <top>
                 <HBox styleClass="topbar" alignment="CENTER_LEFT">
-                    <Label fx:id="lblModule" text="Ventas" styleClass="brand-name"/>
+                    <HBox alignment="CENTER_LEFT" spacing="10.0">
+                        <StackPane styleClass="topbar-icon-pill">
+                            <FontIcon iconLiteral="fas-layer-group" iconSize="15" iconColor="#10b981"/>
+                        </StackPane>
+                        <Label fx:id="lblModule" text="Ventas" styleClass="brand-name"/>
+                    </HBox>
+                    
                     <Region HBox.hgrow="ALWAYS"/>
-                    <HBox styleClass="topbar-actions" alignment="CENTER_RIGHT">
-                        <HBox styleClass="role" alignment="CENTER_LEFT">
+
+                    <HBox styleClass="topbar-actions" alignment="CENTER_RIGHT" spacing="16.0">
+                        <!-- Perfil del Usuario Activo -->
+                        <HBox styleClass="role" alignment="CENTER_LEFT" spacing="10.0">
                             <StackPane styleClass="avatar">
                                 <Label fx:id="lblAvatar" text="AD"/>
                             </StackPane>
-                            <VBox alignment="CENTER_LEFT">
+                            <VBox alignment="CENTER_LEFT" spacing="1.0">
                                 <Label fx:id="lblUsuario" text="Administrador" styleClass="role-name"/>
-                                <Label fx:id="lblRol" text="ADMIN" styleClass="role-tag"/>
+                                <HBox alignment="CENTER_LEFT" spacing="4.0">
+                                    <Label fx:id="lblRol" text="ADMIN" styleClass="role-tag"/>
+                                </HBox>
                             </VBox>
                         </HBox>
+
+                        <!-- Botón de Cerrar Sesión -->
                         <Button fx:id="btnLogout" styleClass="logout-button" onAction="#cerrarSesion"/>
                     </HBox>
                 </HBox>
             </top>
+
+            <!-- Contenido dinámico del módulo -->
             <center>
                 <StackPane fx:id="contentArea"/>
             </center>

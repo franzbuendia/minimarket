@@ -1,5 +1,6 @@
 package com.lacanasta.util;
 
+import javafx.application.Platform;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 
@@ -20,6 +21,10 @@ public final class AlertUtil {
      * @param mensaje texto del mensaje.
      */
     public static void mostrarInfo(String titulo, String mensaje) {
+        if (!Platform.isFxApplicationThread()) {
+            Platform.runLater(() -> mostrarInfo(titulo, mensaje));
+            return;
+        }
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(titulo);
         alert.setHeaderText(null);
@@ -34,6 +39,10 @@ public final class AlertUtil {
      * @param mensaje texto del mensaje.
      */
     public static void mostrarError(String titulo, String mensaje) {
+        if (!Platform.isFxApplicationThread()) {
+            Platform.runLater(() -> mostrarError(titulo, mensaje));
+            return;
+        }
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle(titulo);
         alert.setHeaderText(null);
@@ -48,6 +57,10 @@ public final class AlertUtil {
      * @param mensaje texto del mensaje.
      */
     public static void mostrarAdvertencia(String titulo, String mensaje) {
+        if (!Platform.isFxApplicationThread()) {
+            Platform.runLater(() -> mostrarAdvertencia(titulo, mensaje));
+            return;
+        }
         Alert alert = new Alert(Alert.AlertType.WARNING);
         alert.setTitle(titulo);
         alert.setHeaderText(null);

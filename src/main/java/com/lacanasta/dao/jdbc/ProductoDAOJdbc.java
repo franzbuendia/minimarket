@@ -22,7 +22,7 @@ public class ProductoDAOJdbc implements ProductoDAO {
 
     private static final String COLUMNS =
             "id_producto, codigo_barras, nombre, precio_normal, precio_descuento, costo, stock, estado, "
-            + "id_categoria, usuario_creacion, fecha_creacion, usuario_modificacion, fecha_modificacion";
+            + "id_categoria, imagen_url, usuario_creacion, fecha_creacion, usuario_modificacion, fecha_modificacion";
 
     /**
      * Busca un producto por su identificador.
@@ -121,7 +121,7 @@ public class ProductoDAOJdbc implements ProductoDAO {
      */
     public int insert(Connection conn, Producto p) throws SQLException {
         String sql = "INSERT INTO productos (codigo_barras, nombre, precio_normal, precio_descuento, costo, stock, estado, "
-                + "id_categoria, usuario_creacion, fecha_creacion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                + "id_categoria, imagen_url, usuario_creacion, fecha_creacion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, p.getCodigoBarras());
             ps.setString(2, p.getNombre());
@@ -131,8 +131,9 @@ public class ProductoDAOJdbc implements ProductoDAO {
             ps.setInt(6, p.getStock());
             ps.setBoolean(7, p.isEstado());
             JdbcUtil.setInteger(ps, 8, p.getIdCategoria());
-            JdbcUtil.setInteger(ps, 9, p.getUsuarioCreacion());
-            JdbcUtil.setLocalDateTime(ps, 10, p.getFechaCreacion());
+            ps.setString(9, p.getImagenUrl());
+            JdbcUtil.setInteger(ps, 10, p.getUsuarioCreacion());
+            JdbcUtil.setLocalDateTime(ps, 11, p.getFechaCreacion());
             ps.executeUpdate();
             try (ResultSet keys = ps.getGeneratedKeys()) {
                 return keys.next() ? keys.getInt(1) : 0;
@@ -145,7 +146,7 @@ public class ProductoDAOJdbc implements ProductoDAO {
      */
     public int update(Connection conn, Producto p) throws SQLException {
         String sql = "UPDATE productos SET codigo_barras = ?, nombre = ?, precio_normal = ?, precio_descuento = ?, costo = ?, "
-                + "stock = ?, estado = ?, id_categoria = ?, usuario_modificacion = ?, fecha_modificacion = ? "
+                + "stock = ?, estado = ?, id_categoria = ?, imagen_url = ?, usuario_modificacion = ?, fecha_modificacion = ? "
                 + "WHERE id_producto = ?";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, p.getCodigoBarras());
@@ -156,9 +157,10 @@ public class ProductoDAOJdbc implements ProductoDAO {
             ps.setInt(6, p.getStock());
             ps.setBoolean(7, p.isEstado());
             JdbcUtil.setInteger(ps, 8, p.getIdCategoria());
-            JdbcUtil.setInteger(ps, 9, p.getUsuarioModificacion());
-            JdbcUtil.setLocalDateTime(ps, 10, p.getFechaModificacion());
-            ps.setInt(11, p.getIdProducto());
+            ps.setString(9, p.getImagenUrl());
+            JdbcUtil.setInteger(ps, 10, p.getUsuarioModificacion());
+            JdbcUtil.setLocalDateTime(ps, 11, p.getFechaModificacion());
+            ps.setInt(12, p.getIdProducto());
             return ps.executeUpdate();
         }
     }
@@ -225,6 +227,7 @@ public class ProductoDAOJdbc implements ProductoDAO {
         p.setStock(rs.getInt("stock"));
         p.setEstado(rs.getBoolean("estado"));
         p.setIdCategoria(JdbcUtil.getInteger(rs, "id_categoria"));
+        p.setImagenUrl(rs.getString("imagen_url"));
         p.setUsuarioCreacion(JdbcUtil.getInteger(rs, "usuario_creacion"));
         p.setFechaCreacion(JdbcUtil.getLocalDateTime(rs, "fecha_creacion"));
         p.setUsuarioModificacion(JdbcUtil.getInteger(rs, "usuario_modificacion"));
