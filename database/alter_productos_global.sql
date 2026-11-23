@@ -26,6 +26,17 @@ PREPARE alterIfNotExists FROM @preparedStatement;
 EXECUTE alterIfNotExists;
 DEALLOCATE PREPARE alterIfNotExists;
 
+-- Columna imagen_url
+SET @columnname = 'imagen_url';
+SET @preparedStatement = (SELECT IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = @dbname AND TABLE_NAME = @tablename AND COLUMN_NAME = @columnname) > 0,
+  'SELECT 1',
+  'ALTER TABLE `productos` ADD COLUMN `imagen_url` VARCHAR(255) NULL COMMENT \'URL remota de la foto del producto\''
+));
+PREPARE alterIfNotExists FROM @preparedStatement;
+EXECUTE alterIfNotExists;
+DEALLOCATE PREPARE alterIfNotExists;
+
 -- Columna imagen_ruta
 SET @columnname = 'imagen_ruta';
 SET @preparedStatement = (SELECT IF(
