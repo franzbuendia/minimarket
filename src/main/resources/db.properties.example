@@ -1,3 +1,15 @@
+# ============================================
+# CONFIGURACIÓN DE BASE DE DATOS
+# ============================================
+# Copia este archivo como db.properties y reemplaza los valores
+# NO subir db.properties al repositorio (agregar a .gitignore)
+
+# Aiven Cloud (producción):
+# db.url=jdbc:mysql://mysql-686b3d9-benitolopezjacob-85a5.j.aivencloud.com:19941/defaultdb?useSSL=true&requireSSL=true&verifyServerCertificate=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+# db.user=avnadmin
+# db.password=TU_CONTRASEÑA_AQUI
+
+# Local (desarrollo):
 db.url=jdbc:mysql://localhost:3306/minimarket?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-db.user=tu_usuario
-db.password=tu_contraseña
+db.user=root
+db.password=tu_contraseña_local

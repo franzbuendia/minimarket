@@ -24,7 +24,9 @@ public class MainApp extends Application {
         scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
 
         primaryStage.setTitle("La Canasta - Sistema POS & Gestión");
-        primaryStage.setResizable(false);
+        primaryStage.setResizable(true);
+        primaryStage.setMinWidth(470);
+        primaryStage.setMinHeight(630);
         primaryStage.setScene(scene);
         primaryStage.centerOnScreen();
         primaryStage.show();

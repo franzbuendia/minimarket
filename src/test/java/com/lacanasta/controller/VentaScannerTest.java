@@ -134,6 +134,36 @@ public class VentaScannerTest {
         assertEquals(0, getCarritoSize());
     }
 
+    @Test
+    void testEscanearCodigosPeruanosLocales() {
+        Producto sanLuis = new Producto();
+        sanLuis.setIdProducto(101);
+        sanLuis.setCodigoBarras("7750182001289");
+        sanLuis.setNombre("San Luis 625ml");
+        sanLuis.setPrecioNormal(new BigDecimal("2.00"));
+        sanLuis.setStock(10);
+        sanLuis.setEstado(true);
+
+        when(productoService.findByCodigoBarras("7750182001289")).thenReturn(sanLuis);
+        when(productoService.findById(101)).thenReturn(sanLuis);
+
+        controller.procesarCodigo("7750182001289");
+        assertEquals(1, getCarritoSize());
+    }
+
+    @Test
+    void testEscanearCodigoInvalidoMenorDe8DigitosEsRechazado() {
+        controller.procesarCodigo("12345");
+        assertEquals(0, getCarritoSize());
+    }
+
+    @Test
+    void testEscanearCodigosExtranjerosNoRegistradosLocalmente() {
+        when(productoService.findByCodigoBarras("6928175621285")).thenReturn(null);
+        controller.procesarCodigo("6928175621285");
+        assertEquals(0, getCarritoSize());
+    }
+
     @SuppressWarnings("unchecked")
     private int getCarritoSize() {
         try {

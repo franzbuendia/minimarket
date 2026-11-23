@@ -7,12 +7,15 @@ import com.lacanasta.util.ViewLoader;
 import javafx.fxml.FXML;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.application.Platform;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 import org.kordamp.ikonli.javafx.FontIcon;
 
@@ -156,12 +159,25 @@ public class LoginController {
     private void abrirPantallaPrincipal() throws Exception {
         Parent root = ViewLoader.load("/com/lacanasta/fxml/main-view.fxml");
         Stage stage = (Stage) txtUsuario.getScene().getWindow();
-        Scene scene = new Scene(root, 1200, 780);
+
+        // Obtener dimensiones del área visible de la pantalla principal
+        Rectangle2D visualBounds = Screen.getPrimary().getVisualBounds();
+        Scene scene = new Scene(root, visualBounds.getWidth(), visualBounds.getHeight());
         scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
+
         stage.setTitle("La Canasta - Sistema POS & Gestión");
         stage.setResizable(true);
         stage.setScene(scene);
+
+        // Posicionar y expandir a la pantalla completa disponible
+        stage.setX(visualBounds.getMinX());
+        stage.setY(visualBounds.getMinY());
+        stage.setWidth(visualBounds.getWidth());
+        stage.setHeight(visualBounds.getHeight());
         stage.setMaximized(true);
+
+        // Refuerzo en el siguiente pulso de eventos para el gestor de ventanas
+        Platform.runLater(() -> stage.setMaximized(true));
     }
 
     private void mostrarError(String mensaje) {

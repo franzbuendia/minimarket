@@ -21,8 +21,8 @@ import java.util.List;
 public class ProductoDAOJdbc implements ProductoDAO {
 
     private static final String COLUMNS =
-            "id_producto, codigo_barras, nombre, precio_normal, precio_descuento, costo, stock, estado, "
-            + "id_categoria, imagen_url, usuario_creacion, fecha_creacion, usuario_modificacion, fecha_modificacion";
+            "id_producto, codigo_barras, nombre, marca, precio_normal, precio_descuento, costo, stock, estado, "
+            + "id_categoria, categoria_nombre, imagen_url, imagen_ruta, usuario_creacion, fecha_creacion, usuario_modificacion, fecha_modificacion";
 
     /**
      * Busca un producto por su identificador.
@@ -120,23 +120,57 @@ public class ProductoDAOJdbc implements ProductoDAO {
      * Inserta un producto y devuelve su id generado.
      */
     public int insert(Connection conn, Producto p) throws SQLException {
-        String sql = "INSERT INTO productos (codigo_barras, nombre, precio_normal, precio_descuento, costo, stock, estado, "
-                + "id_categoria, imagen_url, usuario_creacion, fecha_creacion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO productos (codigo_barras, nombre, marca, precio_normal, precio_descuento, costo, stock, estado, "
+                + "id_categoria, categoria_nombre, imagen_url, imagen_ruta, usuario_creacion, fecha_creacion) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            ps.setString(1, p.getCodigoBarras());
-            ps.setString(2, p.getNombre());
-            ps.setBigDecimal(3, p.getPrecioNormal());
-            ps.setBigDecimal(4, p.getPrecioDescuento());
-            ps.setBigDecimal(5, p.getCosto());
-            ps.setInt(6, p.getStock());
-            ps.setBoolean(7, p.isEstado());
-            JdbcUtil.setInteger(ps, 8, p.getIdCategoria());
-            ps.setString(9, p.getImagenUrl());
-            JdbcUtil.setInteger(ps, 10, p.getUsuarioCreacion());
-            JdbcUtil.setLocalDateTime(ps, 11, p.getFechaCreacion());
+            String cod = p.getCodigoBarras() != null ? p.getCodigoBarras().trim() : null;
+            if (cod != null && cod.length() > 50) {
+                cod = cod.substring(0, 50);
+            }
+            String nom = p.getNombre() != null ? p.getNombre().trim() : "";
+            if (nom.length() > 100) {
+                nom = nom.substring(0, 100);
+            }
+            String mar = p.getMarca() != null ? p.getMarca().trim() : null;
+            if (mar != null && mar.length() > 100) {
+                mar = mar.substring(0, 100);
+            }
+            String catNom = p.getCategoriaNombre() != null ? p.getCategoriaNombre().trim() : null;
+            if (catNom != null && catNom.length() > 100) {
+                catNom = catNom.substring(0, 100);
+            }
+            String imgUrl = p.getImagenUrl() != null ? p.getImagenUrl().trim() : null;
+            if (imgUrl != null && imgUrl.length() > 255) {
+                imgUrl = imgUrl.substring(0, 255);
+            }
+            String imgRuta = p.getImagenRuta() != null ? p.getImagenRuta().trim() : null;
+            if (imgRuta != null && imgRuta.length() > 255) {
+                imgRuta = imgRuta.substring(0, 255);
+            }
+
+            ps.setString(1, cod);
+            ps.setString(2, nom);
+            ps.setString(3, mar);
+            ps.setBigDecimal(4, p.getPrecioNormal() != null ? p.getPrecioNormal() : BigDecimal.ZERO);
+            ps.setBigDecimal(5, p.getPrecioDescuento() != null ? p.getPrecioDescuento() : BigDecimal.ZERO);
+            ps.setBigDecimal(6, p.getCosto() != null ? p.getCosto() : BigDecimal.ZERO);
+            ps.setInt(7, Math.max(0, p.getStock()));
+            ps.setBoolean(8, p.isEstado());
+            JdbcUtil.setInteger(ps, 9, p.getIdCategoria());
+            ps.setString(10, catNom);
+            ps.setString(11, imgUrl);
+            ps.setString(12, imgRuta);
+            JdbcUtil.setInteger(ps, 13, p.getUsuarioCreacion());
+            JdbcUtil.setLocalDateTime(ps, 14, p.getFechaCreacion() != null ? p.getFechaCreacion() : java.time.LocalDateTime.now());
             ps.executeUpdate();
             try (ResultSet keys = ps.getGeneratedKeys()) {
-                return keys.next() ? keys.getInt(1) : 0;
+                if (keys.next()) {
+                    int id = keys.getInt(1);
+                    p.setIdProducto(id);
+                    return id;
+                }
+                return 0;
             }
         }
     }
@@ -145,22 +179,50 @@ public class ProductoDAOJdbc implements ProductoDAO {
      * Actualiza los datos de un producto existente.
      */
     public int update(Connection conn, Producto p) throws SQLException {
-        String sql = "UPDATE productos SET codigo_barras = ?, nombre = ?, precio_normal = ?, precio_descuento = ?, costo = ?, "
-                + "stock = ?, estado = ?, id_categoria = ?, imagen_url = ?, usuario_modificacion = ?, fecha_modificacion = ? "
-                + "WHERE id_producto = ?";
+        String sql = "UPDATE productos SET codigo_barras = ?, nombre = ?, marca = ?, precio_normal = ?, precio_descuento = ?, costo = ?, "
+                + "stock = ?, estado = ?, id_categoria = ?, categoria_nombre = ?, imagen_url = ?, imagen_ruta = ?, "
+                + "usuario_modificacion = ?, fecha_modificacion = ? WHERE id_producto = ?";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, p.getCodigoBarras());
-            ps.setString(2, p.getNombre());
-            ps.setBigDecimal(3, p.getPrecioNormal());
-            ps.setBigDecimal(4, p.getPrecioDescuento());
-            ps.setBigDecimal(5, p.getCosto());
-            ps.setInt(6, p.getStock());
-            ps.setBoolean(7, p.isEstado());
-            JdbcUtil.setInteger(ps, 8, p.getIdCategoria());
-            ps.setString(9, p.getImagenUrl());
-            JdbcUtil.setInteger(ps, 10, p.getUsuarioModificacion());
-            JdbcUtil.setLocalDateTime(ps, 11, p.getFechaModificacion());
-            ps.setInt(12, p.getIdProducto());
+            String cod = p.getCodigoBarras() != null ? p.getCodigoBarras().trim() : null;
+            if (cod != null && cod.length() > 50) {
+                cod = cod.substring(0, 50);
+            }
+            String nom = p.getNombre() != null ? p.getNombre().trim() : "";
+            if (nom.length() > 100) {
+                nom = nom.substring(0, 100);
+            }
+            String mar = p.getMarca() != null ? p.getMarca().trim() : null;
+            if (mar != null && mar.length() > 100) {
+                mar = mar.substring(0, 100);
+            }
+            String catNom = p.getCategoriaNombre() != null ? p.getCategoriaNombre().trim() : null;
+            if (catNom != null && catNom.length() > 100) {
+                catNom = catNom.substring(0, 100);
+            }
+            String imgUrl = p.getImagenUrl() != null ? p.getImagenUrl().trim() : null;
+            if (imgUrl != null && imgUrl.length() > 255) {
+                imgUrl = imgUrl.substring(0, 255);
+            }
+            String imgRuta = p.getImagenRuta() != null ? p.getImagenRuta().trim() : null;
+            if (imgRuta != null && imgRuta.length() > 255) {
+                imgRuta = imgRuta.substring(0, 255);
+            }
+
+            ps.setString(1, cod);
+            ps.setString(2, nom);
+            ps.setString(3, mar);
+            ps.setBigDecimal(4, p.getPrecioNormal() != null ? p.getPrecioNormal() : BigDecimal.ZERO);
+            ps.setBigDecimal(5, p.getPrecioDescuento() != null ? p.getPrecioDescuento() : BigDecimal.ZERO);
+            ps.setBigDecimal(6, p.getCosto() != null ? p.getCosto() : BigDecimal.ZERO);
+            ps.setInt(7, Math.max(0, p.getStock()));
+            ps.setBoolean(8, p.isEstado());
+            JdbcUtil.setInteger(ps, 9, p.getIdCategoria());
+            ps.setString(10, catNom);
+            ps.setString(11, imgUrl);
+            ps.setString(12, imgRuta);
+            JdbcUtil.setInteger(ps, 13, p.getUsuarioModificacion());
+            JdbcUtil.setLocalDateTime(ps, 14, p.getFechaModificacion());
+            ps.setInt(15, p.getIdProducto());
             return ps.executeUpdate();
         }
     }
@@ -221,13 +283,16 @@ public class ProductoDAOJdbc implements ProductoDAO {
         p.setIdProducto(rs.getInt("id_producto"));
         p.setCodigoBarras(rs.getString("codigo_barras"));
         p.setNombre(rs.getString("nombre"));
+        p.setMarca(rs.getString("marca"));
         p.setPrecioNormal(rs.getBigDecimal("precio_normal"));
         p.setPrecioDescuento(rs.getBigDecimal("precio_descuento"));
         p.setCosto(rs.getBigDecimal("costo"));
         p.setStock(rs.getInt("stock"));
         p.setEstado(rs.getBoolean("estado"));
         p.setIdCategoria(JdbcUtil.getInteger(rs, "id_categoria"));
+        p.setCategoriaNombre(rs.getString("categoria_nombre"));
         p.setImagenUrl(rs.getString("imagen_url"));
+        p.setImagenRuta(rs.getString("imagen_ruta"));
         p.setUsuarioCreacion(JdbcUtil.getInteger(rs, "usuario_creacion"));
         p.setFechaCreacion(JdbcUtil.getLocalDateTime(rs, "fecha_creacion"));
         p.setUsuarioModificacion(JdbcUtil.getInteger(rs, "usuario_modificacion"));

@@ -27,4 +27,19 @@ class DatabaseConnectionTest {
             System.out.println("CONEXION OK - Usuarios en la BD: " + rs.getInt(1));
         }
     }
+
+    @Test
+    void benchmarkConsultas() throws Exception {
+        DatabaseConnection provider = new DatabaseConnection();
+        long start = System.currentTimeMillis();
+        for (int i = 0; i < 10; i++) {
+            try (Connection conn = provider.getConnection();
+                 Statement st = conn.createStatement();
+                 ResultSet rs = st.executeQuery("SELECT 1")) {
+                assertTrue(rs.next());
+            }
+        }
+        long duration = System.currentTimeMillis() - start;
+        System.out.println("=== 10 consultas consecutivas con HikariCP tardaron: " + duration + " ms (promedio: " + (duration / 10.0) + " ms/consulta) ===");
+    }
 }

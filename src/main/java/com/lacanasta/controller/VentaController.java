@@ -41,8 +41,13 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import com.lacanasta.dto.ProductoDTO;
+import com.lacanasta.service.CategoriaService;
+import com.lacanasta.service.ProductoGlobalService;
+import com.lacanasta.service.ProductoPeruanoService;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.awt.Toolkit;
@@ -53,6 +58,7 @@ import java.math.RoundingMode;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Controlador del módulo de ventas (carrito, búsqueda, pago y vuelto).
@@ -63,13 +69,31 @@ public class VentaController {
     private final VentaService ventaService;
     private final CajaService cajaService;
     private final ConfigService configService;
+    private final ProductoGlobalService productoGlobalService;
+    private final CategoriaService categoriaService;
 
     public VentaController(ProductoService productoService, VentaService ventaService,
                            CajaService cajaService, ConfigService configService) {
+        this(productoService, ventaService, cajaService, configService,
+                new ProductoGlobalService(), new CategoriaService());
+    }
+
+    public VentaController(ProductoService productoService, VentaService ventaService,
+                           CajaService cajaService, ConfigService configService,
+                           ProductoGlobalService productoGlobalService, CategoriaService categoriaService) {
         this.productoService = productoService;
         this.ventaService = ventaService;
         this.cajaService = cajaService;
         this.configService = configService;
+        this.productoGlobalService = productoGlobalService != null ? productoGlobalService : new ProductoGlobalService();
+        this.categoriaService = categoriaService;
+    }
+
+    public VentaController(ProductoService productoService, VentaService ventaService,
+                           CajaService cajaService, ConfigService configService,
+                           ProductoPeruanoService productoPeruanoService, CategoriaService categoriaService) {
+        this(productoService, ventaService, cajaService, configService,
+                new ProductoGlobalService(), categoriaService);
     }
 
     @FXML
@@ -399,14 +423,39 @@ public class VentaController {
                 return;
             }
 
-            // 2. Si es numérico (código de barras no encontrado en base de datos)
-            if (texto.matches("\\d{4,}")) {
-                emitirBeepAlerta();
-                mostrarFeedback("⚠ Código no registrado: " + texto + ". Regístrelo en el módulo Productos.", FeedbackTipo.ERROR);
+            // 2. Si es numérico (código de barras no encontrado en base de datos local)
+            if (texto.matches("\\d+")) {
+                String codigo = texto;
+
+                // 3.a. Validar que el código sea numérico y tenga entre 8 y 14 dígitos
+                if (!productoGlobalService.esCodigoValido(codigo)) {
+                    emitirBeepAlerta();
+                    mostrarFeedback("Código de barras inválido (debe tener entre 8 y 14 dígitos).", FeedbackTipo.ERROR);
+                    AlertUtil.mostrarAdvertencia("Código de barras inválido",
+                            "Código de barras inválido: \"" + codigo + "\". Debe contener entre 8 y 14 dígitos numéricos.");
+                    if (txtBuscar != null) {
+                        txtBuscar.clear();
+                    }
+                    enfocarBuscador();
+                    return;
+                }
+
+                // 3.b. Si es válido -> consultar la API global de Open Food Facts en hilo asíncrono
+                mostrarFeedback("🔍 Consultando catálogo global para: " + codigo + "...", FeedbackTipo.INFO);
                 if (txtBuscar != null) {
                     txtBuscar.clear();
                 }
-                enfocarBuscador();
+
+                CompletableFuture.supplyAsync(() -> productoGlobalService.buscarGlobal(codigo))
+                        .thenAcceptAsync(dto -> manejarRespuestaProductoGlobal(codigo, dto), Platform::runLater)
+                        .exceptionally(ex -> {
+                            Platform.runLater(() -> {
+                                emitirBeepAlerta();
+                                mostrarFeedback("Error al consultar producto global: " + ex.getMessage(), FeedbackTipo.ERROR);
+                                enfocarBuscador();
+                            });
+                            return null;
+                        });
                 return;
             }
 
@@ -423,6 +472,56 @@ public class VentaController {
             emitirBeepAlerta();
             AlertUtil.mostrarError("Error al escanear", e.getMessage());
         }
+    }
+
+    /**
+     * Procesa la respuesta obtenida del servicio de productos globales según las reglas de negocio.
+     */
+    private void manejarRespuestaProductoGlobal(String codigo, ProductoDTO dto) {
+        Window window = (txtBuscar != null && txtBuscar.getScene() != null) ? txtBuscar.getScene().getWindow() : null;
+
+        // 3.c. Si la API global lo encuentra:
+        if (dto != null && dto.isEncontrado()) {
+            mostrarFeedback("✓ Producto encontrado en catálogo global: " + dto.getNombre(), FeedbackTipo.SUCCESS);
+            DialogoProductoNuevo.Resultado res = DialogoProductoNuevo.mostrar(
+                    window, dto, categoriaService.findAll(), productoService, null
+            );
+
+            if (res.getAccion() == DialogoProductoNuevo.Accion.AGREGAR_Y_VENDER && res.getProducto() != null) {
+                agregarAlCarritoConStock(res.getProducto());
+                mostrarFeedback("✓ Producto registrado y añadido al carrito: " + res.getProducto().getNombre(), FeedbackTipo.SUCCESS);
+            } else if (res.getAccion() == DialogoProductoNuevo.Accion.SOLO_AGREGAR && res.getProducto() != null) {
+                mostrarFeedback("✓ Producto agregado al catálogo: " + res.getProducto().getNombre(), FeedbackTipo.SUCCESS);
+            } else {
+                mostrarFeedback("Registro de producto cancelado.", FeedbackTipo.INFO);
+            }
+            enfocarBuscador();
+            return;
+        }
+
+        // 3.d. Si la API NO lo encuentra:
+        emitirBeepAlerta();
+        mostrarFeedback("Producto no encontrado en bases globales. Regístrelo manualmente.", FeedbackTipo.WARNING);
+        boolean registrar = AlertUtil.mostrarConfirmacion(
+                "Producto no encontrado",
+                "Producto no encontrado en bases globales. ¿Desea registrarlo manualmente?"
+        );
+        if (registrar) {
+            ProductoDTO manualDto = new ProductoDTO(codigo);
+            manualDto.setNombre("");
+            manualDto.setMarca("");
+            manualDto.setCategoria("Abarrotes");
+            DialogoProductoNuevo.Resultado res = DialogoProductoNuevo.mostrar(
+                    window, manualDto, categoriaService.findAll(), productoService, null
+            );
+            if (res.getAccion() == DialogoProductoNuevo.Accion.AGREGAR_Y_VENDER && res.getProducto() != null) {
+                agregarAlCarritoConStock(res.getProducto());
+                mostrarFeedback("✓ Producto registrado y añadido a la venta: " + res.getProducto().getNombre(), FeedbackTipo.SUCCESS);
+            } else if (res.getAccion() == DialogoProductoNuevo.Accion.SOLO_AGREGAR && res.getProducto() != null) {
+                mostrarFeedback("✓ Producto incorporado al catálogo: " + res.getProducto().getNombre(), FeedbackTipo.SUCCESS);
+            }
+        }
+        enfocarBuscador();
     }
 
     /**
@@ -920,14 +1019,10 @@ public class VentaController {
 
         ticket.getChildren().addAll(lblMensaje, lblPie);
 
-        ScrollPane scrollTicket = new ScrollPane(ticket);
-        scrollTicket.setFitToWidth(true);
-        scrollTicket.setMaxHeight(480);
-        scrollTicket.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
-
-        // Botones de acción
+        // Botones de acción fijos en la parte inferior
         HBox botones = new HBox(12);
         botones.setAlignment(Pos.CENTER);
+        botones.setPadding(new Insets(6, 0, 2, 0));
 
         Button btnImprimir = new Button("Imprimir");
         btnImprimir.getStyleClass().addAll("btn", "btn-outline");
@@ -957,11 +1052,17 @@ public class VentaController {
 
         botones.getChildren().addAll(btnImprimir, btnPdf, btnAceptar);
 
-        root.getChildren().addAll(scrollTicket, botones);
+        // El ticket va directamente en el contenedor principal sin ScrollPane
+        root.getChildren().addAll(ticket, botones);
 
-        Scene scene = new Scene(root, 420, 580);
+        Scene scene = new Scene(root);
         scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
         modal.setScene(scene);
+        modal.setResizable(true);
+        modal.setMinWidth(480);
+        modal.setMinHeight(680);
+        modal.sizeToScene();
+        modal.centerOnScreen();
         modal.setOnHidden(e -> enfocarBuscador());
         modal.showAndWait();
         enfocarBuscador();

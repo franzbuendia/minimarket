@@ -102,6 +102,31 @@ public final class ProductImageHelper {
      * @param arc    radio de curvatura de las esquinas.
      * @return un contenedor {@link Node} estilizado.
      */
+    private static FontIcon crearPlaceholder(double width) {
+        FontIcon icon;
+        try {
+            icon = new FontIcon("fas-box-open");
+        } catch (Exception e) {
+            try {
+                icon = new FontIcon("fas-boxes");
+            } catch (Exception ex) {
+                icon = new FontIcon("bi-box-seam");
+            }
+        }
+        icon.setIconSize((int) Math.max(16, width * 0.42));
+        icon.setIconColor(Color.web("#94a3b8"));
+        return icon;
+    }
+
+    /**
+     * Genera un nodo de miniatura con esquinas redondeadas y borde sutil.
+     *
+     * @param url    ruta de la imagen.
+     * @param width  ancho deseado.
+     * @param height alto deseado.
+     * @param arc    radio de curvatura de las esquinas.
+     * @return un contenedor {@link Node} estilizado.
+     */
     public static Node createThumbnail(String url, double width, double height, double arc) {
         StackPane container = new StackPane();
         container.setPrefSize(width, height);
@@ -109,35 +134,51 @@ public final class ProductImageHelper {
         container.setMaxSize(width, height);
         container.setAlignment(Pos.CENTER);
 
-        container.setStyle("-fx-background-color: #f1f5f9; -fx-background-radius: " + arc
-                + "px; -fx-border-color: #e2e8f0; -fx-border-radius: " + arc
-                + "px; -fx-border-width: 1px;");
+        container.setStyle("-fx-background-color: #f8fafc; -fx-background-radius: " + arc
+                + "px; -fx-border-color: #cbd5e1; -fx-border-radius: " + arc
+                + "px; -fx-border-width: 1.5px; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.04), 4, 0, 0, 1);");
+
+        final FontIcon placeholder = crearPlaceholder(width);
+
+        if (url == null || url.isBlank()) {
+            container.getChildren().add(placeholder);
+            return container;
+        }
 
         Image img = getImage(url);
-        if (img != null && !img.isError()) {
-            ImageView iv = new ImageView(img);
-            iv.setFitWidth(width - 4);
-            iv.setFitHeight(height - 4);
-            iv.setPreserveRatio(true);
-            iv.setSmooth(true);
+        if (img == null) {
+            container.getChildren().add(placeholder);
+            return container;
+        }
 
-            Rectangle clip = new Rectangle(width - 4, height - 4);
-            clip.setArcWidth(arc);
-            clip.setArcHeight(arc);
-            iv.setClip(clip);
+        ImageView iv = new ImageView(img);
+        iv.setFitWidth(width - 6);
+        iv.setFitHeight(height - 6);
+        iv.setPreserveRatio(true);
+        iv.setSmooth(true);
 
+        Rectangle clip = new Rectangle(width - 6, height - 6);
+        clip.setArcWidth(arc);
+        clip.setArcHeight(arc);
+        iv.setClip(clip);
+
+        if (img.getProgress() >= 1.0 && !img.isError()) {
             container.getChildren().add(iv);
+        } else if (img.isError()) {
+            container.getChildren().add(placeholder);
         } else {
-            // Placeholder con icono
-            FontIcon icon;
-            try {
-                icon = new FontIcon("fas-boxes");
-            } catch (Exception e) {
-                icon = new FontIcon("bi-box-seam");
-            }
-            icon.setIconSize((int) Math.max(14, width * 0.45));
-            icon.setIconColor(Color.web("#94a3b8"));
-            container.getChildren().add(icon);
+            // Mientras descarga o carga en segundo plano, muestra placeholder y añade listener
+            container.getChildren().add(placeholder);
+            img.progressProperty().addListener((obs, oldVal, newVal) -> {
+                if (newVal.doubleValue() >= 1.0 && !img.isError()) {
+                    container.getChildren().setAll(iv);
+                }
+            });
+            img.errorProperty().addListener((obs, oldVal, hasError) -> {
+                if (hasError) {
+                    container.getChildren().setAll(placeholder);
+                }
+            });
         }
 
         return container;

@@ -8,13 +8,16 @@ public class Producto {
     private int idProducto;
     private String codigoBarras;
     private String nombre;
+    private String marca;
     private BigDecimal precioNormal;
     private BigDecimal precioDescuento;
     private BigDecimal costo;
     private int stock;
     private boolean estado;
     private Integer idCategoria;
+    private String categoriaNombre;
     private String imagenUrl;
+    private String imagenRuta;
     private Integer usuarioCreacion;
     private LocalDateTime fechaCreacion;
     private Integer usuarioModificacion;
@@ -52,6 +55,14 @@ public class Producto {
 
     public void setNombre(String nombre) {
         this.nombre = nombre;
+    }
+
+    public String getMarca() {
+        return marca;
+    }
+
+    public void setMarca(String marca) {
+        this.marca = marca;
     }
 
     public BigDecimal getPrecioNormal() {
@@ -102,12 +113,28 @@ public class Producto {
         this.idCategoria = idCategoria;
     }
 
+    public String getCategoriaNombre() {
+        return categoriaNombre;
+    }
+
+    public void setCategoriaNombre(String categoriaNombre) {
+        this.categoriaNombre = categoriaNombre;
+    }
+
     public String getImagenUrl() {
         return imagenUrl;
     }
 
     public void setImagenUrl(String imagenUrl) {
         this.imagenUrl = imagenUrl;
+    }
+
+    public String getImagenRuta() {
+        return imagenRuta;
+    }
+
+    public void setImagenRuta(String imagenRuta) {
+        this.imagenRuta = imagenRuta;
     }
 
     public Integer getUsuarioCreacion() {

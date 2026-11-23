@@ -17,6 +17,8 @@ import com.lacanasta.service.CajaService;
 import com.lacanasta.service.CategoriaService;
 import com.lacanasta.service.CompraService;
 import com.lacanasta.service.ConfigService;
+import com.lacanasta.service.ProductoGlobalService;
+import com.lacanasta.service.ProductoPeruanoService;
 import com.lacanasta.service.ProductoService;
 import com.lacanasta.service.ProveedorService;
 import com.lacanasta.service.UsuarioService;
@@ -37,6 +39,8 @@ public class ControllerFactory implements Callback<Class<?>, Object> {
     private final ConfigService configService = new ConfigService();
     private final ProveedorService proveedorService = new ProveedorService();
     private final CompraService compraService = new CompraService();
+    private final ProductoPeruanoService productoPeruanoService = new ProductoPeruanoService();
+    private final ProductoGlobalService productoGlobalService = new ProductoGlobalService();
 
     /**
      * Crea el controller solicitado con sus dependencias inyectadas.
@@ -53,7 +57,8 @@ public class ControllerFactory implements Callback<Class<?>, Object> {
             return new MainController();
         }
         if (type == VentaController.class) {
-            return new VentaController(productoService, ventaService, cajaService, configService);
+            return new VentaController(productoService, ventaService, cajaService, configService,
+                    productoGlobalService, categoriaService);
         }
         if (type == ProductoController.class) {
             return new ProductoController(productoService, categoriaService);

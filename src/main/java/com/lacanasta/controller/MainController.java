@@ -9,6 +9,7 @@ import com.lacanasta.util.ViewLoader;
 import javafx.animation.FadeTransition;
 import javafx.animation.ParallelTransition;
 import javafx.animation.TranslateTransition;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -98,6 +99,13 @@ public class MainController {
 
         cargarUsuario();
         abrirVentas();
+
+        // Asegurar que la ventana principal abra ocupando toda la pantalla
+        Platform.runLater(() -> {
+            if (btnLogout != null && btnLogout.getScene() != null && btnLogout.getScene().getWindow() instanceof Stage stage) {
+                stage.setMaximized(true);
+            }
+        });
     }
 
     private void cargarUsuario() {

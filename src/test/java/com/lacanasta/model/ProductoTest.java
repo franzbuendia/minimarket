@@ -45,6 +45,9 @@ class ProductoTest {
         producto.setIdProducto(1);
         producto.setCodigoBarras("7891000012345");
         producto.setNombre("Coca-Cola 1.5L");
+        producto.setMarca("Coca-Cola");
+        producto.setCategoriaNombre("Bebidas");
+        producto.setImagenRuta("/path/to/coca.jpg");
         producto.setStock(50);
         producto.setEstado(true);
         producto.setIdCategoria(2);
@@ -52,6 +55,9 @@ class ProductoTest {
         assertEquals(1, producto.getIdProducto());
         assertEquals("7891000012345", producto.getCodigoBarras());
         assertEquals("Coca-Cola 1.5L", producto.getNombre());
+        assertEquals("Coca-Cola", producto.getMarca());
+        assertEquals("Bebidas", producto.getCategoriaNombre());
+        assertEquals("/path/to/coca.jpg", producto.getImagenRuta());
         assertEquals(50, producto.getStock());
         assertTrue(producto.isEstado());
         assertEquals(Integer.valueOf(2), producto.getIdCategoria());
