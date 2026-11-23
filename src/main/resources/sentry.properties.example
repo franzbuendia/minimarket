@@ -1,0 +1,4 @@
+# Copie este archivo como sentry.properties (ignorado por git) y coloque su DSN.
+# Alternativa: defina la variable de entorno SENTRY_DSN.
+dsn=https://<key>@o<orgId>.ingest.us.sentry.io/<projectId>
+environment=development

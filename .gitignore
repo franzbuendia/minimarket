@@ -35,6 +35,7 @@ build/
 ### Credenciales y archivos generados en local ###
 src/main/resources/db.properties
 src/main/resources/database.properties
+src/main/resources/sentry.properties
 db.properties
 *.properties.backup.*
 tickets/
