@@ -64,6 +64,8 @@ public final class AlertUtil {
             return;
         }
         Alert alert = new Alert(Alert.AlertType.WARNING);
+        // Reporta a Sentry (no hace nada si Sentry esta desactivado o sin internet)
+        io.sentry.Sentry.captureMessage("[" + titulo + "] " + mensaje, io.sentry.SentryLevel.WARNING);
         alert.setTitle(titulo);
         alert.setHeaderText(null);
         alert.setContentText(mensaje);

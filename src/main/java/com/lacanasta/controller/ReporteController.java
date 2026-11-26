@@ -19,6 +19,11 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.layout.HBox;
 
+import javafx.stage.FileChooser;
+import javafx.stage.Window;
+
+import java.awt.Desktop;
+import java.io.File;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -182,11 +187,53 @@ public class ReporteController {
                         "S/ " + v.getTotal().toPlainString(),
                         String.valueOf(v.getEstadoPago())));
             }
-            new ReportePDFGenerator().generarReporte("reportes/reporte_ventas_hoy.pdf",
+
+            Window window = (tablaVentas != null && tablaVentas.getScene() != null)
+                    ? tablaVentas.getScene().getWindow() : null;
+
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Exportar Reporte de Ventas en PDF");
+            fileChooser.setInitialFileName("reporte_ventas_hoy.pdf");
+            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Documento PDF (*.pdf)", "*.pdf"));
+
+            File dirReportes = new File("reportes");
+            if (!dirReportes.exists()) {
+                dirReportes.mkdirs();
+            }
+            if (dirReportes.isDirectory()) {
+                fileChooser.setInitialDirectory(dirReportes);
+            }
+
+            File archivoSeleccionado = fileChooser.showSaveDialog(window);
+            if (archivoSeleccionado == null) {
+                return;
+            }
+
+            if (archivoSeleccionado.getParentFile() != null && !archivoSeleccionado.getParentFile().exists()) {
+                archivoSeleccionado.getParentFile().mkdirs();
+            }
+
+            new ReportePDFGenerator().generarReporte(archivoSeleccionado.getAbsolutePath(),
                     "Reporte de ventas del día", encabezados, filas);
-            AlertUtil.mostrarInfo("Reportes", "Reporte generado en reportes/reporte_ventas_hoy.pdf");
+
+            AlertUtil.mostrarInfo("Reportes", "Reporte generado con éxito en:\n" + archivoSeleccionado.getAbsolutePath());
+
+            final File fFinal = archivoSeleccionado;
+            new Thread(() -> {
+                try {
+                    String os = System.getProperty("os.name", "").toLowerCase();
+                    if (os.contains("linux")) {
+                        new ProcessBuilder("xdg-open", fFinal.getAbsolutePath()).start();
+                    } else if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
+                        Desktop.getDesktop().open(fFinal);
+                    }
+                } catch (Exception ex) {
+                    AlertUtil.mostrarError("Error al abrir PDF", "No se pudo abrir el PDF: " + ex.getMessage());
+                }
+            }, "abrir-reporte-pdf-thread").start();
+
         } catch (Exception e) {
-            AlertUtil.mostrarError("Reportes", e.getMessage());
+            AlertUtil.mostrarError("Error al exportar reporte", "No se pudo generar el reporte PDF: " + e.getMessage());
         }
     }
 

@@ -4,6 +4,8 @@ import com.lacanasta.model.Usuario;
 import com.lacanasta.service.UsuarioService;
 import com.lacanasta.util.SessionManager;
 import com.lacanasta.util.ViewLoader;
+import io.sentry.Sentry;
+import io.sentry.SentryLevel;
 import javafx.fxml.FXML;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -143,6 +145,7 @@ public class LoginController {
         }
 
         if (usuario == null) {
+            Sentry.captureMessage("[Login] Intento fallido de inicio de sesión para usuario: " + username, SentryLevel.WARNING);
             mostrarError("Credenciales incorrectas (usuario o contraseña inválidos)");
             return;
         }

@@ -178,8 +178,14 @@ public class CompraController {
         Button menos = new Button("−");
         menos.getStyleClass().add("small-button");
         menos.setOnAction(e -> cambiarCantidad(item, -1));
-        Label cantidad = new Label(String.valueOf(item.getCantidad()));
-        cantidad.getStyleClass().add("cart-item-qty");
+
+        TextField txtCantidad = new TextField(String.valueOf(item.getCantidad()));
+        txtCantidad.getStyleClass().add("field");
+        txtCantidad.setPrefWidth(55);
+        txtCantidad.setAlignment(Pos.CENTER);
+        txtCantidad.setEditable(true);
+        txtCantidad.setDisable(false);
+
         Button mas = new Button("+");
         mas.getStyleClass().add("small-button");
         mas.setOnAction(e -> cambiarCantidad(item, 1));
@@ -190,6 +196,43 @@ public class CompraController {
 
         Label subtotal = new Label("S/ " + item.getSubtotal().toPlainString());
         subtotal.getStyleClass().add("cart-item-subtotal");
+
+        txtCantidad.textProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal == null) return;
+            if (!newVal.matches("\\d*")) {
+                txtCantidad.setText(newVal.replaceAll("[^\\d]", ""));
+                return;
+            }
+            if (!newVal.isBlank()) {
+                try {
+                    int val = Integer.parseInt(newVal);
+                    if (val > 0) {
+                        item.setCantidad(val);
+                        subtotal.setText("S/ " + item.getSubtotal().toPlainString());
+                        actualizarTotal();
+                    }
+                } catch (NumberFormatException ignored) {
+                }
+            }
+        });
+
+        txtCantidad.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
+            if (isNowFocused) {
+                javafx.application.Platform.runLater(txtCantidad::selectAll);
+            } else {
+                if (txtCantidad.getText() == null || txtCantidad.getText().isBlank() || Integer.parseInt(txtCantidad.getText()) <= 0) {
+                    txtCantidad.setText(String.valueOf(item.getCantidad()));
+                }
+                subtotal.setText("S/ " + item.getSubtotal().toPlainString());
+                actualizarTotal();
+            }
+        });
+
+        costo.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
+            if (isNowFocused) {
+                javafx.application.Platform.runLater(costo::selectAll);
+            }
+        });
 
         costo.textProperty().addListener((obs, o, n) -> {
             try {
@@ -206,7 +249,7 @@ public class CompraController {
         borrar.getStyleClass().addAll("btn", "btn-ghost");
         borrar.setOnAction(e -> quitarItem(item));
 
-        HBox centro = new HBox(6, menos, cantidad, mas, costo);
+        HBox centro = new HBox(6, menos, txtCantidad, mas, costo);
         centro.setAlignment(Pos.CENTER);
         HBox derecha = new HBox(8, subtotal, borrar);
         derecha.setAlignment(Pos.CENTER_RIGHT);

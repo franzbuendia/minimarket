@@ -89,17 +89,17 @@
                 <Label text="Método de pago" styleClass="form-label"/>
 
                 <HBox spacing="6.0">
-                    <ToggleButton fx:id="btnEfectivo" text="Efectivo" toggleGroup="$grupoPago" onAction="#onMetodoEfectivo" styleClass="payment-option" prefWidth="100" maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                    <ToggleButton fx:id="btnEfectivo" text="Efectivo" toggleGroup="$grupoPago" onAction="#onMetodoEfectivo" styleClass="payment-option" prefWidth="100" maxWidth="Infinity" HBox.hgrow="ALWAYS" focusTraversable="false">
                         <graphic>
                             <FontIcon iconLiteral="fas-money-bill-wave" iconSize="14"/>
                         </graphic>
                     </ToggleButton>
-                    <ToggleButton fx:id="btnTarjeta" text="Tarjeta" toggleGroup="$grupoPago" onAction="#onMetodoTarjeta" styleClass="payment-option" prefWidth="100" maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                    <ToggleButton fx:id="btnTarjeta" text="Tarjeta" toggleGroup="$grupoPago" onAction="#onMetodoTarjeta" styleClass="payment-option" prefWidth="100" maxWidth="Infinity" HBox.hgrow="ALWAYS" focusTraversable="false">
                         <graphic>
                             <FontIcon iconLiteral="fas-credit-card" iconSize="14"/>
                         </graphic>
                     </ToggleButton>
-                    <ToggleButton fx:id="btnYape" text="Yape / Plin" toggleGroup="$grupoPago" onAction="#onMetodoYape" styleClass="payment-option" prefWidth="100" maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                    <ToggleButton fx:id="btnYape" text="Yape / Plin" toggleGroup="$grupoPago" onAction="#onMetodoYape" styleClass="payment-option" prefWidth="100" maxWidth="Infinity" HBox.hgrow="ALWAYS" focusTraversable="false">
                         <graphic>
                             <FontIcon iconLiteral="fas-mobile-alt" iconSize="14"/>
                         </graphic>
@@ -109,7 +109,7 @@
                 <VBox fx:id="panelEfectivo" spacing="9.0">
                     <HBox spacing="10.0" alignment="CENTER_LEFT">
                         <Label text="Monto recibido" styleClass="form-label"/>
-                        <TextField fx:id="txtMontoRecibido" promptText="0.00" styleClass="field" HBox.hgrow="ALWAYS"/>
+                        <TextField fx:id="txtMontoRecibido" promptText="0.00" styleClass="field" editable="true" disable="false" HBox.hgrow="ALWAYS"/>
                     </HBox>
                     <Label fx:id="lblVuelto" text="Vuelto: S/ 0.00" styleClass="change-box" maxWidth="Infinity"/>
                 </VBox>

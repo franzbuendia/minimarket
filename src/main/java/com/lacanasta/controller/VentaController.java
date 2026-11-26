@@ -33,6 +33,7 @@ import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextInputControl;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.input.KeyCode;
@@ -269,7 +270,34 @@ public class VentaController {
         });
         tablaResultados.setItems(resultados);
 
-        txtMontoRecibido.textProperty().addListener((obs, oldVal, newVal) -> calcularVuelto());
+        txtMontoRecibido.setEditable(true);
+        txtMontoRecibido.setDisable(false);
+        txtMontoRecibido.setOnAction(e -> onPagar());
+        txtMontoRecibido.focusedProperty().addListener((obs, oldVal, isFocused) -> {
+            if (isFocused) {
+                Platform.runLater(txtMontoRecibido::selectAll);
+            }
+        });
+        txtMontoRecibido.textProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal == null) return;
+            if (newVal.contains(",")) {
+                Platform.runLater(() -> txtMontoRecibido.setText(newVal.replace(',', '.')));
+                return;
+            }
+            calcularVuelto();
+        });
+
+        if (btnEfectivo != null) btnEfectivo.setFocusTraversable(false);
+        if (btnTarjeta != null) btnTarjeta.setFocusTraversable(false);
+        if (btnYape != null) btnYape.setFocusTraversable(false);
+        if (panelEfectivo != null) {
+            panelEfectivo.setOnMouseClicked(e -> {
+                if (txtMontoRecibido != null) {
+                    txtMontoRecibido.requestFocus();
+                    txtMontoRecibido.selectAll();
+                }
+            });
+        }
 
         seleccionarMetodo(MetodoPago.EFECTIVO);
         cargarProductos();
@@ -310,27 +338,30 @@ public class VentaController {
         filtroInstalado = true;
 
         scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
-            long now = System.currentTimeMillis();
-            long elapsed = now - lastKeyTime;
-            lastKeyTime = now;
+            // Si la vista de ventas no está activa en pantalla, no hacer nada
+            if (rootPane == null || rootPane.getScene() == null || !rootPane.isVisible() || rootPane.getParent() == null) {
+                return;
+            }
+
+            Node focusOwner = scene.getFocusOwner();
 
             // Si está en el campo de monto recibido para el pago en efectivo:
             if (txtMontoRecibido != null && txtMontoRecibido.isFocused()) {
                 if (event.getCode() == KeyCode.ENTER) {
-                    // Si el escáner envió una ráfaga rápida que cayó en el monto:
-                    if (scanBuffer.length() >= 4 && elapsed < 200) {
-                        String barcode = scanBuffer.toString().trim();
-                        scanBuffer.setLength(0);
-                        event.consume();
-                        revertirEscaneoEnMonto(barcode);
-                        procesarCodigo(barcode);
-                    } else {
-                        event.consume();
-                        onPagar();
-                    }
+                    event.consume();
+                    onPagar();
                 }
                 return;
             }
+
+            // Si cualquier campo de texto tiene el foco (distinto al buscador de ventas), no intervenir
+            if (focusOwner instanceof TextInputControl && focusOwner != txtBuscar) {
+                return;
+            }
+
+            long now = System.currentTimeMillis();
+            long elapsed = now - lastKeyTime;
+            lastKeyTime = now;
 
             if (event.getCode() == KeyCode.ENTER) {
                 // Si el escáner físico envió una ráfaga acumulada en el buffer:
@@ -351,6 +382,18 @@ public class VentaController {
         });
 
         scene.addEventFilter(KeyEvent.KEY_TYPED, event -> {
+            // Si la vista de ventas no está activa en pantalla, no hacer nada
+            if (rootPane == null || rootPane.getScene() == null || !rootPane.isVisible() || rootPane.getParent() == null) {
+                return;
+            }
+
+            Node focusOwner = scene.getFocusOwner();
+
+            // Si cualquier campo de texto tiene el foco (monto recibido, cantidad, etc.), dejar escribir libremente
+            if (focusOwner instanceof TextInputControl && focusOwner != txtBuscar) {
+                return;
+            }
+
             String ch = event.getCharacter();
             if (ch == null || ch.isEmpty() || ch.charAt(0) < 32 || ch.charAt(0) > 126) {
                 return;
@@ -363,9 +406,20 @@ public class VentaController {
             scanBuffer.append(ch);
             lastKeyTime = now;
 
-            // Si el foco no está en txtBuscar ni en txtMontoRecibido, redirigir al buscador:
-            if (txtBuscar != null && !txtBuscar.isFocused() &&
-                    (txtMontoRecibido == null || !txtMontoRecibido.isFocused())) {
+            // Si el método seleccionado es efectivo y el usuario teclea números o decimales cerca de la zona de pago:
+            if (metodoPago == MetodoPago.EFECTIVO && txtMontoRecibido != null && txtMontoRecibido.isVisible()) {
+                if (focusOwner == btnEfectivo || focusOwner == panelEfectivo || focusOwner == btnPagar) {
+                    if (Character.isDigit(ch.charAt(0)) || ch.equals(".") || ch.equals(",")) {
+                        txtMontoRecibido.requestFocus();
+                        txtMontoRecibido.appendText(ch.replace(',', '.'));
+                        event.consume();
+                        return;
+                    }
+                }
+            }
+
+            // Si el foco no está en un campo de texto, redirigir al buscador:
+            if (txtBuscar != null && !txtBuscar.isFocused()) {
                 txtBuscar.requestFocus();
                 txtBuscar.appendText(ch);
                 event.consume();
@@ -710,19 +764,73 @@ public class VentaController {
         info.setAlignment(Pos.CENTER_LEFT);
         HBox.setHgrow(info, Priority.ALWAYS);
 
+        Label subtotal = new Label("S/ " + item.getSubtotal().toPlainString());
+        subtotal.getStyleClass().add("cart-item-subtotal");
+
         Button menos = new Button("−");
         menos.getStyleClass().add("small-button");
         menos.setOnAction(e -> cambiarCantidad(item, -1));
-        Label cantidad = new Label(String.valueOf(item.getCantidad()));
-        cantidad.getStyleClass().add("cart-item-qty");
+
+        TextField txtCantidad = new TextField(String.valueOf(item.getCantidad()));
+        txtCantidad.getStyleClass().add("field");
+        txtCantidad.setPrefWidth(55);
+        txtCantidad.setAlignment(Pos.CENTER);
+        txtCantidad.setEditable(true);
+        txtCantidad.setDisable(false);
+
+        txtCantidad.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
+            if (isNowFocused) {
+                Platform.runLater(txtCantidad::selectAll);
+            } else {
+                String txt = txtCantidad.getText();
+                if (txt == null || txt.isBlank()) {
+                    txtCantidad.setText(String.valueOf(item.getCantidad()));
+                } else {
+                    try {
+                        int val = Integer.parseInt(txt.trim());
+                        if (val > 0) {
+                            int stock = item.getProducto() != null ? item.getProducto().getStock() : 9999;
+                            if (val <= stock) {
+                                item.setCantidad(val);
+                            } else {
+                                item.setCantidad(stock);
+                                txtCantidad.setText(String.valueOf(stock));
+                                AlertUtil.mostrarAdvertencia("Stock", "Stock máximo disponible: " + stock);
+                            }
+                        } else {
+                            txtCantidad.setText(String.valueOf(item.getCantidad()));
+                        }
+                    } catch (NumberFormatException ex) {
+                        txtCantidad.setText(String.valueOf(item.getCantidad()));
+                    }
+                }
+                subtotal.setText("S/ " + item.getSubtotal().toPlainString());
+                actualizarTotales();
+                tablaResultados.refresh();
+            }
+        });
+
+        txtCantidad.textProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal == null || newVal.isBlank()) return;
+            try {
+                int val = Integer.parseInt(newVal.trim());
+                if (val > 0) {
+                    int stock = item.getProducto() != null ? item.getProducto().getStock() : 9999;
+                    if (val <= stock) {
+                        item.setCantidad(val);
+                        subtotal.setText("S/ " + item.getSubtotal().toPlainString());
+                        actualizarTotales();
+                    }
+                }
+            } catch (NumberFormatException ignored) {}
+        });
+
         Button mas = new Button("+");
         mas.getStyleClass().add("small-button");
         mas.setOnAction(e -> cambiarCantidad(item, 1));
-        HBox qty = new HBox(6, menos, cantidad, mas);
+        HBox qty = new HBox(6, menos, txtCantidad, mas);
         qty.setAlignment(Pos.CENTER);
 
-        Label subtotal = new Label("S/ " + item.getSubtotal().toPlainString());
-        subtotal.getStyleClass().add("cart-item-subtotal");
         Button borrar = new Button();
         borrar.setGraphic(new FontIcon("bi-trash"));
         borrar.getStyleClass().addAll("btn", "btn-ghost");
@@ -769,7 +877,12 @@ public class VentaController {
         panelEfectivo.setManaged(efectivo);
         actualizarTotales();
         if (efectivo && txtMontoRecibido != null) {
-            Platform.runLater(() -> txtMontoRecibido.requestFocus());
+            txtMontoRecibido.setDisable(false);
+            txtMontoRecibido.setEditable(true);
+            Platform.runLater(() -> {
+                txtMontoRecibido.requestFocus();
+                txtMontoRecibido.selectAll();
+            });
         } else {
             enfocarBuscador();
         }
@@ -785,17 +898,18 @@ public class VentaController {
     }
 
     private void calcularVuelto() {
-        String texto = txtMontoRecibido.getText().trim();
-        if (texto.isEmpty()) {
+        if (txtMontoRecibido == null || lblVuelto == null) return;
+        String texto = txtMontoRecibido.getText();
+        if (texto == null || texto.trim().isEmpty()) {
             lblVuelto.setText("Vuelto: S/ 0.00");
             return;
         }
         try {
-            BigDecimal recibido = new BigDecimal(texto);
+            BigDecimal recibido = new BigDecimal(texto.trim());
             BigDecimal total = totalCarrito();
             BigDecimal vuelto = recibido.subtract(total);
             if (vuelto.compareTo(BigDecimal.ZERO) < 0) {
-                lblVuelto.setText("Vuelto: S/ 0.00");
+                lblVuelto.setText("Vuelto: S/ 0.00 (Falta S/ " + vuelto.abs().toPlainString() + ")");
             } else {
                 lblVuelto.setText("Vuelto: S/ " + vuelto.toPlainString());
             }
@@ -874,6 +988,7 @@ public class VentaController {
                 new TicketPDFGenerator().generarTicket(rutaTicket, config, venta, detalles, vuelto);
             } catch (Exception pdfEx) {
                 System.err.println("No se pudo generar el archivo PDF: " + pdfEx.getMessage());
+                AlertUtil.mostrarError("Error al generar PDF", "No se pudo generar el comprobante PDF: " + pdfEx.getMessage());
             }
 
             // Desplegar el boleto/ticket en pantalla directamente
@@ -1033,16 +1148,25 @@ public class VentaController {
         btnPdf.getStyleClass().addAll("btn", "btn-soft");
         btnPdf.setGraphic(new FontIcon("fas-file-pdf"));
         btnPdf.setOnAction(e -> {
-            try {
-                File f = new File(rutaTicket);
-                if (f.exists() && Desktop.isDesktopSupported()) {
-                    Desktop.getDesktop().open(f);
-                } else {
-                    AlertUtil.mostrarInfo("PDF", "Ticket guardado en: " + f.getAbsolutePath());
+            new Thread(() -> {
+                try {
+                    File f = new File(rutaTicket);
+                    if (!f.exists()) {
+                        AlertUtil.mostrarError("Error al abrir PDF", "El comprobante no existe: " + f.getAbsolutePath());
+                        return;
+                    }
+                    String os = System.getProperty("os.name", "").toLowerCase();
+                    if (os.contains("linux")) {
+                        new ProcessBuilder("xdg-open", f.getAbsolutePath()).start();
+                    } else if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
+                        Desktop.getDesktop().open(f);
+                    } else {
+                        AlertUtil.mostrarInfo("PDF", "Ticket guardado en: " + f.getAbsolutePath());
+                    }
+                } catch (Exception ex) {
+                    AlertUtil.mostrarError("Error al abrir PDF", ex.getMessage() != null ? ex.getMessage() : ex.toString());
                 }
-            } catch (Exception ex) {
-                AlertUtil.mostrarError("Error al abrir PDF", ex.getMessage());
-            }
+            }, "abrir-pdf-thread").start();
         });
 
         Button btnAceptar = new Button("Aceptar / Nueva venta");
