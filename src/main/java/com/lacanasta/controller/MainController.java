@@ -6,6 +6,10 @@ import com.lacanasta.util.AlertUtil;
 import com.lacanasta.util.IconFactory;
 import com.lacanasta.util.SessionManager;
 import com.lacanasta.util.ViewLoader;
+import io.sentry.ISpan;
+import io.sentry.ITransaction;
+import io.sentry.Sentry;
+import io.sentry.SpanStatus;
 import javafx.animation.FadeTransition;
 import javafx.animation.ParallelTransition;
 import javafx.animation.TranslateTransition;
@@ -77,6 +81,7 @@ public class MainController {
     private Button btnConfiguracion;
 
     private List<Button> navButtons;
+    private String moduloActual = "Inicio";
 
     @FXML
     private void initialize() {
@@ -186,30 +191,61 @@ public class MainController {
     }
 
     private void navegar(String fxml, String modulo, Button activo) {
+        ITransaction tx = Sentry.startTransaction("modulo." + modulo.toLowerCase(), "ui.navigation");
+        tx.setTag("modulo.origen", moduloActual);
+        tx.setTag("modulo.destino", modulo);
+        Sentry.addBreadcrumb("Navegación: " + moduloActual + " -> " + modulo);
+
         try {
-            Parent view = ViewLoader.load(fxml);
-            view.setOpacity(0.0);
-            view.setTranslateY(8.0);
-            contentArea.getChildren().setAll(view);
-
-            FadeTransition fade = new FadeTransition(Duration.millis(220), view);
-            fade.setFromValue(0.0);
-            fade.setToValue(1.0);
-
-            TranslateTransition slide = new TranslateTransition(Duration.millis(220), view);
-            slide.setFromY(8.0);
-            slide.setToY(0.0);
-
-            ParallelTransition transition = new ParallelTransition(fade, slide);
-            transition.play();
-
-            lblModule.setText(modulo);
-            for (Button b : navButtons) {
-                b.getStyleClass().remove("active");
+            ISpan spanCarga = tx.startChild("ui.load", "Cargar " + fxml);
+            Parent view;
+            try {
+                view = ViewLoader.load(fxml);
+                spanCarga.setStatus(SpanStatus.OK);
+            } catch (Exception ex) {
+                spanCarga.setThrowable(ex);
+                spanCarga.setStatus(SpanStatus.INTERNAL_ERROR);
+                throw ex;
+            } finally {
+                spanCarga.finish();
             }
-            activo.getStyleClass().add("active");
+
+            ISpan spanRender = tx.startChild("ui.render", "Mostrar " + modulo);
+            try {
+                view.setOpacity(0.0);
+                view.setTranslateY(8.0);
+                contentArea.getChildren().setAll(view);
+
+                FadeTransition fade = new FadeTransition(Duration.millis(220), view);
+                fade.setFromValue(0.0);
+                fade.setToValue(1.0);
+
+                TranslateTransition slide = new TranslateTransition(Duration.millis(220), view);
+                slide.setFromY(8.0);
+                slide.setToY(0.0);
+
+                ParallelTransition transition = new ParallelTransition(fade, slide);
+                transition.play();
+
+                lblModule.setText(modulo);
+                for (Button b : navButtons) {
+                    b.getStyleClass().remove("active");
+                }
+                activo.getStyleClass().add("active");
+                moduloActual = modulo;
+                spanRender.setStatus(SpanStatus.OK);
+            } finally {
+                spanRender.finish();
+            }
+
+            tx.setStatus(SpanStatus.OK);
         } catch (Exception e) {
+            tx.setThrowable(e);
+            tx.setStatus(SpanStatus.INTERNAL_ERROR);
+            Sentry.captureException(e);
             AlertUtil.mostrarError("Error", "No se pudo cargar el módulo: " + e.getMessage());
+        } finally {
+            tx.finish();
         }
     }
 
