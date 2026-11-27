@@ -16,8 +16,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -48,9 +54,15 @@ public final class ResourceMonitor {
 
     private static final long INTERVALO_SEGUNDOS = 15;
     private static final long COOLDOWN_MS = TimeUnit.MINUTES.toMillis(5);
+    private static final int MAX_HISTORIAL_EVENTOS = 100;
+    private static final DateTimeFormatter HORA_EVENTO_FMT = DateTimeFormatter.ofPattern("HH:mm:ss");
+
+    public static final long UMBRAL_MODULO_ATENCION_MS = 500;
+    public static final long UMBRAL_MODULO_CRITICO_MS = 1_500;
 
     private static ScheduledExecutorService scheduler;
     private static final Map<String, Long> ultimaAlertaPorTipo = new ConcurrentHashMap<>();
+    private static final Deque<RegistroEvento> historialEventos = new ConcurrentLinkedDeque<>();
     private static int lecturasCpuAltaConsecutivas = 0;
 
     private ResourceMonitor() {
@@ -107,6 +119,19 @@ public final class ResourceMonitor {
             NivelEstado nivelTareas,
             NivelEstado nivelComponentes,
             NivelEstado nivelGeneral
+    ) {
+    }
+
+    /**
+     * Registro puntual de una acción o alerta junto con el consumo en ese instante.
+     */
+    public record RegistroEvento(
+            String hora,
+            String accion,
+            String duracion,
+            long memoriaMB,
+            double procesadorPct,
+            NivelEstado estado
     ) {
     }
 
@@ -225,6 +250,52 @@ public final class ResourceMonitor {
         Sentry.captureMessage(resumen, SentryLevel.INFO);
     }
 
+    /**
+     * Registra una acción del sistema (ej. apertura de módulo, limpieza o cambio de modo)
+     * junto con la memoria y procesador utilizados en ese preciso instante.
+     *
+     * @param accion     descripción en español de la acción.
+     * @param duracionMs duración en milisegundos, o negativo si no aplica.
+     */
+    public static void registrarActividad(String accion, long duracionMs) {
+        EstadoRecursos estado = capturarEstado();
+        NivelEstado nivel = estado.nivelGeneral();
+        if (duracionMs >= 0) {
+            NivelEstado nivelTiempo = evaluarNivel(duracionMs, UMBRAL_MODULO_ATENCION_MS, UMBRAL_MODULO_CRITICO_MS);
+            nivel = peorNivel(nivel, nivelTiempo);
+        }
+        String duracionTexto = duracionMs >= 0 ? duracionMs + " ms" : "—";
+        agregarEvento(new RegistroEvento(
+                LocalTime.now().format(HORA_EVENTO_FMT),
+                accion,
+                duracionTexto,
+                estado.memoriaDatosMB(),
+                estado.procesadorPorcentaje(),
+                nivel
+        ));
+    }
+
+    /**
+     * Devuelve una copia de los eventos más recientes (más nuevo primero).
+     */
+    public static List<RegistroEvento> getHistorialEventos() {
+        return new ArrayList<>(historialEventos);
+    }
+
+    /**
+     * Limpia el historial en memoria mostrado en la tabla de Diagnóstico.
+     */
+    public static void limpiarHistorialEventos() {
+        historialEventos.clear();
+    }
+
+    private static void agregarEvento(RegistroEvento evento) {
+        historialEventos.addFirst(evento);
+        while (historialEventos.size() > MAX_HISTORIAL_EVENTOS) {
+            historialEventos.pollLast();
+        }
+    }
+
     private static void revisarYAlertar() {
         try {
             EstadoRecursos estado = capturarEstado();
@@ -270,6 +341,14 @@ public final class ResourceMonitor {
         String detalle = construirResumenTexto(titulo, estado, -2);
         SentryLevel sentryLevel = nivel == NivelEstado.CRITICO ? SentryLevel.ERROR : SentryLevel.WARNING;
         Sentry.captureMessage(detalle, sentryLevel);
+        agregarEvento(new RegistroEvento(
+                LocalTime.now().format(HORA_EVENTO_FMT),
+                titulo,
+                "Alerta",
+                estado.memoriaDatosMB(),
+                estado.procesadorPorcentaje(),
+                nivel
+        ));
 
         if (nivel == NivelEstado.CRITICO) {
             AlertUtil.mostrarAdvertencia(

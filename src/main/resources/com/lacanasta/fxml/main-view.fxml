@@ -67,9 +67,20 @@
     <!-- ÁREA PRINCIPAL -->
     <center>
         <BorderPane>
-            <!-- Barra Superior (Topbar) -->
+            <!-- Barra Superior (Topbar + Banner de Modo Prueba) -->
             <top>
-                <HBox styleClass="topbar" alignment="CENTER_LEFT">
+                <VBox>
+                    <HBox fx:id="bannerModoPrueba" alignment="CENTER_LEFT" spacing="12.0"
+                          visible="false" managed="false"
+                          style="-fx-background-color: #fef3c7; -fx-border-color: #f59e0b; -fx-border-width: 0 0 2 0; -fx-padding: 8 18;">
+                        <FontIcon iconLiteral="fas-flask" iconSize="15" iconColor="#b45309"/>
+                        <Label text="MODO PRUEBA ACTIVO — Ningún cambio afecta la tienda real (usando base de datos espejo minimarket_pruebas)"
+                               style="-fx-font-weight: bold; -fx-text-fill: #92400e; -fx-font-size: 12.5px;"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Button text="Salir de Modo Prueba" onAction="#salirModoPrueba"
+                                style="-fx-background-color: #b45309; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6; -fx-padding: 4 12; -fx-cursor: hand;"/>
+                    </HBox>
+                    <HBox styleClass="topbar" alignment="CENTER_LEFT">
                     <HBox alignment="CENTER_LEFT" spacing="10.0">
                         <StackPane styleClass="topbar-icon-pill">
                             <FontIcon iconLiteral="fas-layer-group" iconSize="15" iconColor="#10b981"/>
@@ -97,6 +108,7 @@
                         <Button fx:id="btnLogout" styleClass="logout-button" onAction="#cerrarSesion"/>
                     </HBox>
                 </HBox>
+                </VBox>
             </top>
 
             <!-- Contenido dinámico del módulo -->

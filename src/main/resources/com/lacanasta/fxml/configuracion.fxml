@@ -258,6 +258,11 @@
                                 <FontIcon iconLiteral="fas-chart-line" iconSize="14" iconColor="white"/>
                             </graphic>
                         </Button>
+                        <Button fx:id="btnModoPrueba" text="Activar Modo Prueba" onAction="#onToggleModoPrueba" styleClass="btn, btn-outline">
+                            <graphic>
+                                <FontIcon iconLiteral="fas-flask" iconSize="14"/>
+                            </graphic>
+                        </Button>
                     </HBox>
                 </VBox>
             </VBox>

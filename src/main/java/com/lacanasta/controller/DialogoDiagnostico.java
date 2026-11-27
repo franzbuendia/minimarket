@@ -1,11 +1,18 @@
 package com.lacanasta.controller;
 
 import com.lacanasta.util.AlertUtil;
+import com.lacanasta.util.DatabaseConnection;
 import com.lacanasta.util.ResourceMonitor;
 import com.lacanasta.util.ResourceMonitor.EstadoRecursos;
 import com.lacanasta.util.ResourceMonitor.NivelEstado;
+import com.lacanasta.util.ResourceMonitor.RegistroEvento;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
+import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.beans.property.ReadOnlyStringWrapper;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.collections.transformation.SortedList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -16,6 +23,9 @@ import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
+import javafx.scene.control.TableCell;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -30,8 +40,9 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
 /**
- * Ventana de diagnóstico en tiempo real completamente en español, pensada para
- * que el administrador o dueño entienda la salud del equipo sin jerga técnica.
+ * Ventana flotante de diagnóstico en tiempo real completamente en español.
+ * Muestra tarjetas con semáforo, gráfica deslizante y una tabla de registro
+ * con el consumo exacto de memoria y procesador al abrir cada módulo o evento.
  */
 public final class DialogoDiagnostico {
 
@@ -44,10 +55,11 @@ public final class DialogoDiagnostico {
 
     /**
      * Abre la ventana flotante (no bloqueante) de diagnóstico en tiempo real,
-     * permitiendo seguir operando el POS mientras se observan las gráficas.
+     * permitiendo seguir operando el POS mientras se observan gráficas y tabla.
      *
      * @param owner ventana padre.
      */
+    @SuppressWarnings("unchecked")
     public static void mostrar(Window owner) {
         if (ventanaAbierta != null && ventanaAbierta.isShowing()) {
             ventanaAbierta.toFront();
@@ -56,20 +68,19 @@ public final class DialogoDiagnostico {
         }
 
         Stage stage = new Stage();
+        // Sin initOwner para que sea una ventana independiente: permite minimizarla
+        // y pasar libremente a la ventana principal del POS sin quedar encima.
         stage.initModality(Modality.NONE);
-        if (owner != null) {
-            stage.initOwner(owner);
-        }
         stage.setTitle("Diagnóstico y Salud del Equipo — La Canasta");
-        stage.setMinWidth(860);
-        stage.setMinHeight(640);
+        stage.setMinWidth(880);
+        stage.setMinHeight(520);
         ventanaAbierta = stage;
 
         // --- Cabecera ---
         Label lblTitulo = new Label("Salud y Rendimiento del Equipo");
         lblTitulo.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #0f172a;");
 
-        Label lblSubtitulo = new Label("Monitoreo en vivo de esta computadora (se actualiza cada 2 segundos).");
+        Label lblSubtitulo = new Label("Monitoreo en vivo mientras usas el sistema (se actualiza cada 2 segundos).");
         lblSubtitulo.setStyle("-fx-font-size: 12.5px; -fx-text-fill: #64748b;");
 
         Label lblBadgeGeneral = new Label("Estado general: Óptimo");
@@ -113,7 +124,7 @@ public final class DialogoDiagnostico {
             HBox.setHgrow(t.root, Priority.ALWAYS);
         }
 
-        // --- Gráfica animada en tiempo real ---
+        // --- Izquierda: Gráfica animada en tiempo real ---
         CategoryAxis ejeX = new CategoryAxis();
         ejeX.setLabel("Hora");
         ejeX.setAnimated(false);
@@ -127,7 +138,7 @@ public final class DialogoDiagnostico {
         grafica.setAnimated(false);
         grafica.setCreateSymbols(false);
         grafica.setLegendVisible(true);
-        grafica.setPrefHeight(250);
+        grafica.setPrefHeight(220);
         VBox.setVgrow(grafica, Priority.ALWAYS);
 
         XYChart.Series<String, Number> serieMemoria = new XYChart.Series<>();
@@ -139,11 +150,114 @@ public final class DialogoDiagnostico {
         grafica.getData().addAll(serieMemoria, serieProcesador);
 
         VBox contenedorGrafica = new VBox(grafica);
+        contenedorGrafica.setPrefWidth(390);
+        contenedorGrafica.setMinWidth(320);
         contenedorGrafica.setStyle(
+                "-fx-background-color: white; -fx-background-radius: 12; "
+                        + "-fx-border-color: #e2e8f0; -fx-border-radius: 12; -fx-padding: 8;"
+        );
+        HBox.setHgrow(contenedorGrafica, Priority.SOMETIMES);
+        VBox.setVgrow(contenedorGrafica, Priority.ALWAYS);
+
+        // --- Derecha: Tabla de actividad y consumo en ese instante ---
+        Label lblTituloTabla = new Label("Registro de actividad y consumo");
+        lblTituloTabla.setStyle("-fx-font-size: 13.5px; -fx-font-weight: bold; -fx-text-fill: #0f172a;");
+
+        Button btnLimpiarTabla = new Button("Limpiar");
+        btnLimpiarTabla.getStyleClass().addAll("btn", "btn-ghost");
+        btnLimpiarTabla.setStyle("-fx-font-size: 11px; -fx-padding: 3 8;");
+
+        Region spacerTabla = new Region();
+        HBox.setHgrow(spacerTabla, Priority.ALWAYS);
+        HBox headerTabla = new HBox(8, lblTituloTabla, spacerTabla, btnLimpiarTabla);
+        headerTabla.setAlignment(Pos.CENTER_LEFT);
+
+        ObservableList<RegistroEvento> eventosObservable = FXCollections.observableArrayList();
+        SortedList<RegistroEvento> eventosOrdenados = new SortedList<>(eventosObservable);
+        TableView<RegistroEvento> tablaEventos = new TableView<>(eventosOrdenados);
+        eventosOrdenados.comparatorProperty().bind(tablaEventos.comparatorProperty());
+        tablaEventos.setPlaceholder(new Label("Navega por los módulos del POS para ver el consumo aquí."));
+        tablaEventos.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        tablaEventos.setStyle("-fx-font-size: 12px;");
+        VBox.setVgrow(tablaEventos, Priority.ALWAYS);
+
+        TableColumn<RegistroEvento, String> colHora = new TableColumn<>("Hora");
+        colHora.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().hora()));
+        colHora.setPrefWidth(82);
+        colHora.setMinWidth(78);
+
+        TableColumn<RegistroEvento, String> colAccion = new TableColumn<>("Acción / Módulo");
+        colAccion.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().accion()));
+        colAccion.setPrefWidth(195);
+        colAccion.setMinWidth(160);
+
+        TableColumn<RegistroEvento, String> colTiempo = new TableColumn<>("Tiempo");
+        colTiempo.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().duracion()));
+        colTiempo.setComparator((a, b) -> Long.compare(extraerMs(a), extraerMs(b)));
+        colTiempo.setPrefWidth(76);
+        colTiempo.setMinWidth(70);
+
+        TableColumn<RegistroEvento, Number> colMemoria = new TableColumn<>("Memoria");
+        colMemoria.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue().memoriaMB()));
+        colMemoria.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(Number item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : item.longValue() + " MB");
+            }
+        });
+        colMemoria.setPrefWidth(80);
+        colMemoria.setMinWidth(74);
+
+        TableColumn<RegistroEvento, Number> colCpu = new TableColumn<>("CPU");
+        colCpu.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue().procesadorPct()));
+        colCpu.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(Number item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : String.format("%.1f%%", item.doubleValue()));
+            }
+        });
+        colCpu.setPrefWidth(68);
+        colCpu.setMinWidth(62);
+
+        TableColumn<RegistroEvento, String> colEstado = new TableColumn<>("Estado");
+        colEstado.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().estado().getEtiqueta()));
+        colEstado.setPrefWidth(84);
+        colEstado.setMinWidth(78);
+        colEstado.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null || getTableRow() == null || getTableRow().getItem() == null) {
+                    setText(null);
+                    setStyle("");
+                } else {
+                    NivelEstado nivel = getTableRow().getItem().estado();
+                    setText(item);
+                    setStyle("-fx-font-weight: bold; -fx-text-fill: " + nivel.getColorTexto() + ";");
+                }
+            }
+        });
+
+        tablaEventos.getColumns().addAll(colHora, colAccion, colTiempo, colMemoria, colCpu, colEstado);
+
+        btnLimpiarTabla.setOnAction(e -> {
+            ResourceMonitor.limpiarHistorialEventos();
+            eventosObservable.clear();
+        });
+
+        VBox contenedorTabla = new VBox(8, headerTabla, tablaEventos);
+        contenedorTabla.setPrefWidth(600);
+        contenedorTabla.setMinWidth(540);
+        contenedorTabla.setStyle(
                 "-fx-background-color: white; -fx-background-radius: 12; "
                         + "-fx-border-color: #e2e8f0; -fx-border-radius: 12; -fx-padding: 10;"
         );
-        VBox.setVgrow(contenedorGrafica, Priority.ALWAYS);
+        HBox.setHgrow(contenedorTabla, Priority.ALWAYS);
+
+        HBox zonaCentral = new HBox(12, contenedorGrafica, contenedorTabla);
+        VBox.setVgrow(zonaCentral, Priority.ALWAYS);
 
         // --- Barra de servicios y disco ---
         Label lblBaseDatos = new Label("Base de datos: Verificando...");
@@ -229,13 +343,27 @@ public final class DialogoDiagnostico {
                 serieProcesador.getData().remove(0);
             }
 
+            // Actualizar tabla SOLO si realmente llegaron eventos nuevos,
+            // conservando el ordenamiento actual del usuario (SortedList) sin perder la vista.
+            var historialActual = ResourceMonitor.getHistorialEventos();
+            if (!historialActual.equals(eventosObservable)) {
+                RegistroEvento seleccionado = tablaEventos.getSelectionModel().getSelectedItem();
+                eventosObservable.setAll(historialActual);
+                if (seleccionado != null) {
+                    tablaEventos.getSelectionModel().select(seleccionado);
+                }
+            }
+
             // Servicios
             long bdMs = ultimaLatenciaBd[0];
+            String nombreBd = DatabaseConnection.getBaseDatosActiva();
+            String etiquetaModo = DatabaseConnection.isModoPruebaActivo() ? " [MODO PRUEBA]" : "";
             if (bdMs >= 0) {
-                lblBaseDatos.setText("Base de datos: Conectada (" + bdMs + " ms)");
-                lblBaseDatos.setStyle("-fx-font-size: 12.5px; -fx-font-weight: bold; -fx-text-fill: #059669;");
+                lblBaseDatos.setText("Base de datos (" + nombreBd + ")" + etiquetaModo + ": Conectada (" + bdMs + " ms)");
+                lblBaseDatos.setStyle("-fx-font-size: 12.5px; -fx-font-weight: bold; -fx-text-fill: "
+                        + (DatabaseConnection.isModoPruebaActivo() ? "#d97706;" : "#059669;"));
             } else {
-                lblBaseDatos.setText("Base de datos: Sin conexión");
+                lblBaseDatos.setText("Base de datos (" + nombreBd + "): Sin conexión");
                 lblBaseDatos.setStyle("-fx-font-size: 12.5px; -fx-font-weight: bold; -fx-text-fill: #dc2626;");
             }
 
@@ -248,9 +376,11 @@ public final class DialogoDiagnostico {
         };
 
         btnLimpiarMemoria.setOnAction(e -> {
+            long t0 = System.currentTimeMillis();
             long antes = ultimoEstado[0].memoriaDatosMB();
             System.gc();
             ultimaLatenciaBd[0] = ResourceMonitor.medirBaseDatosMs();
+            ResourceMonitor.registrarActividad("Limpieza de memoria", System.currentTimeMillis() - t0);
             actualizar.run();
             long despues = ultimoEstado[0].memoriaDatosMB();
             long liberado = Math.max(0, antes - despues);
@@ -272,6 +402,8 @@ public final class DialogoDiagnostico {
                 return;
             }
             ResourceMonitor.enviarReporteManual(ultimoEstado[0], ultimaLatenciaBd[0]);
+            ResourceMonitor.registrarActividad("Reporte enviado a la nube", -1);
+            actualizar.run();
             AlertUtil.mostrarInfo(
                     "Reporte enviado",
                     "Se envió el estado actual del equipo al panel de monitoreo.\n"
@@ -285,17 +417,16 @@ public final class DialogoDiagnostico {
         timeline.setCycleCount(Timeline.INDEFINITE);
         timeline.play();
 
-        // Garantizar que se detiene por completo al cerrar la ventana
         stage.setOnHidden(e -> {
             timeline.stop();
             ventanaAbierta = null;
         });
 
-        VBox root = new VBox(14, header, filaTarjetas, contenedorGrafica, barraServicios, footer);
-        root.setPadding(new Insets(18));
+        VBox root = new VBox(12, header, filaTarjetas, zonaCentral, barraServicios, footer);
+        root.setPadding(new Insets(14));
         root.setStyle("-fx-background-color: #f1f5f9;");
 
-        Scene scene = new Scene(root, 900, 660);
+        Scene scene = new Scene(root, 1020, 580);
         var css = DialogoDiagnostico.class.getResource("/css/styles.css");
         if (css != null) {
             scene.getStylesheets().add(css.toExternalForm());
@@ -303,6 +434,21 @@ public final class DialogoDiagnostico {
         stage.setScene(scene);
         stage.centerOnScreen();
         stage.show();
+    }
+
+    private static long extraerMs(String texto) {
+        if (texto == null) {
+            return -1;
+        }
+        String digitos = texto.replaceAll("[^0-9]", "");
+        if (digitos.isEmpty()) {
+            return -1;
+        }
+        try {
+            return Long.parseLong(digitos);
+        } catch (NumberFormatException e) {
+            return -1;
+        }
     }
 
     private static void aplicarBadge(Label label, String texto, NivelEstado nivel) {

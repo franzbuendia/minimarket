@@ -104,7 +104,13 @@ public class ConfigController {
     private Label lblDbDetalles;
 
     @FXML
+    private Label lblBadgeDb;
+
+    @FXML
     private Label lblLatencia;
+
+    @FXML
+    private Button btnModoPrueba;
 
     @FXML
     private Button btnDatosNegocio;
@@ -158,6 +164,7 @@ public class ConfigController {
 
         // Cargar datos existentes de la base de datos
         cargarDatos();
+        actualizarEstadoModoPruebaUI();
     }
 
     private void enlazarPreviewTicket() {
@@ -291,6 +298,53 @@ public class ConfigController {
     private void onAbrirDiagnostico() {
         DialogoDiagnostico.mostrar(panelPreferencias != null && panelPreferencias.getScene() != null
                 ? panelPreferencias.getScene().getWindow() : null);
+    }
+
+    @FXML
+    private void onToggleModoPrueba() {
+        if (!DatabaseConnection.isModoPruebaActivo()) {
+            boolean confirmar = AlertUtil.mostrarConfirmacion(
+                    "Activar Modo Prueba",
+                    "Se creará una copia espejo de la base de datos real (minimarket_pruebas).\n\n"
+                            + "Todas las ventas, compras, caja y cambios que hagas en Modo Prueba NO afectarán "
+                            + "los datos reales de la tienda.\n\n¿Deseas activar el Modo Prueba ahora?"
+            );
+            if (!confirmar) {
+                return;
+            }
+            try {
+                DatabaseConnection.activarModoPrueba();
+                actualizarEstadoModoPruebaUI();
+                MainController.actualizarBannerModoPrueba();
+                AlertUtil.mostrarInfo("Modo Prueba activo",
+                        "Ahora estás trabajando sobre la base de datos espejo 'minimarket_pruebas'.\n"
+                                + "Tus datos reales están completamente protegidos.");
+            } catch (Exception e) {
+                AlertUtil.mostrarError("Error al activar Modo Prueba",
+                        "No se pudo crear la base de datos de pruebas: " + e.getMessage());
+            }
+        } else {
+            DatabaseConnection.desactivarModoPrueba();
+            actualizarEstadoModoPruebaUI();
+            MainController.actualizarBannerModoPrueba();
+            cargarDatos();
+            AlertUtil.mostrarInfo("Modo Prueba desactivado",
+                    "Has vuelto a la base de datos real (" + DatabaseConnection.getBaseDatosActiva() + ").");
+        }
+    }
+
+    private void actualizarEstadoModoPruebaUI() {
+        boolean activo = DatabaseConnection.isModoPruebaActivo();
+        if (btnModoPrueba != null) {
+            btnModoPrueba.setText(activo ? "Salir de Modo Prueba" : "Activar Modo Prueba");
+        }
+        if (lblBadgeDb != null) {
+            lblBadgeDb.setText(activo ? "MODO PRUEBA" : "EN LÍNEA");
+        }
+        if (lblDbDetalles != null) {
+            lblDbDetalles.setText("BD activa: " + DatabaseConnection.getBaseDatosActiva()
+                    + (activo ? " (Copia espejo segura — no altera datos reales)" : " (Base de datos real de la tienda)"));
+        }
     }
 
     private void mostrarPanel(VBox panelDestino, Button botonActivo) {

@@ -3,7 +3,9 @@ package com.lacanasta.controller;
 import com.lacanasta.model.Rol;
 import com.lacanasta.model.Usuario;
 import com.lacanasta.util.AlertUtil;
+import com.lacanasta.util.DatabaseConnection;
 import com.lacanasta.util.IconFactory;
+import com.lacanasta.util.ResourceMonitor;
 import com.lacanasta.util.SessionManager;
 import com.lacanasta.util.ViewLoader;
 import io.sentry.ISpan;
@@ -20,6 +22,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
@@ -40,6 +43,9 @@ public class MainController {
 
     @FXML
     private StackPane contentArea;
+
+    @FXML
+    private HBox bannerModoPrueba;
 
     @FXML
     private Label lblModule;
@@ -103,6 +109,7 @@ public class MainController {
         btnLogout.setGraphic(IconFactory.create("logout", 17, Color.web("#f1f5f9")));
 
         cargarUsuario();
+        refrescarBannerModoPrueba();
         abrirVentas();
 
         // Asegurar que la ventana principal abra ocupando toda la pantalla
@@ -191,6 +198,7 @@ public class MainController {
     }
 
     private void navegar(String fxml, String modulo, Button activo) {
+        long inicioMs = System.currentTimeMillis();
         ITransaction tx = Sentry.startTransaction("modulo." + modulo.toLowerCase(), "ui.navigation");
         tx.setTag("modulo.origen", moduloActual);
         tx.setTag("modulo.destino", modulo);
@@ -239,6 +247,7 @@ public class MainController {
             }
 
             tx.setStatus(SpanStatus.OK);
+            ResourceMonitor.registrarActividad("Abrir " + modulo, System.currentTimeMillis() - inicioMs);
         } catch (Exception e) {
             tx.setThrowable(e);
             tx.setStatus(SpanStatus.INTERNAL_ERROR);
@@ -253,6 +262,32 @@ public class MainController {
         if (instancia != null) {
             instancia.abrirProductos();
         }
+    }
+
+    /**
+     * Actualiza la visibilidad de la franja superior de Modo Prueba.
+     */
+    public static void actualizarBannerModoPrueba() {
+        if (instancia != null) {
+            instancia.refrescarBannerModoPrueba();
+        }
+    }
+
+    private void refrescarBannerModoPrueba() {
+        if (bannerModoPrueba != null) {
+            boolean activo = DatabaseConnection.isModoPruebaActivo();
+            bannerModoPrueba.setVisible(activo);
+            bannerModoPrueba.setManaged(activo);
+        }
+    }
+
+    @FXML
+    private void salirModoPrueba() {
+        DatabaseConnection.desactivarModoPrueba();
+        refrescarBannerModoPrueba();
+        abrirVentas();
+        AlertUtil.mostrarInfo("Modo Prueba desactivado",
+                "Has vuelto a la base de datos real de la tienda (" + DatabaseConnection.getBaseDatosActiva() + ").");
     }
 
     @FXML
