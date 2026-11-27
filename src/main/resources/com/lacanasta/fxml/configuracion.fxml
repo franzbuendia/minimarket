@@ -253,6 +253,11 @@
                                 <FontIcon iconLiteral="fas-tachometer-alt" iconSize="14"/>
                             </graphic>
                         </Button>
+                        <Button fx:id="btnDiagnostico" text="Diagnóstico del equipo en vivo" onAction="#onAbrirDiagnostico" styleClass="btn, btn-primary">
+                            <graphic>
+                                <FontIcon iconLiteral="fas-chart-line" iconSize="14" iconColor="white"/>
+                            </graphic>
+                        </Button>
                     </HBox>
                 </VBox>
             </VBox>

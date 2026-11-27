@@ -287,6 +287,12 @@ public class ConfigController {
         AlertUtil.mostrarInfo("Mantenimiento", "Tablas y cachés del sistema optimizados correctamente.");
     }
 
+    @FXML
+    private void onAbrirDiagnostico() {
+        DialogoDiagnostico.mostrar(panelPreferencias != null && panelPreferencias.getScene() != null
+                ? panelPreferencias.getScene().getWindow() : null);
+    }
+
     private void mostrarPanel(VBox panelDestino, Button botonActivo) {
         for (Button b : navButtons) {
             b.getStyleClass().remove("active");

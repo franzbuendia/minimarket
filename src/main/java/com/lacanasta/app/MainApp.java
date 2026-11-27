@@ -32,6 +32,11 @@ public class MainApp extends Application {
         primaryStage.show();
     }
 
+    @Override
+    public void stop() {
+        com.lacanasta.util.ResourceMonitor.detener();
+    }
+
     /**
      * Método main de la aplicación.
      *
@@ -39,6 +44,7 @@ public class MainApp extends Application {
      */
     public static void main(String[] args) {
         initSentry();
+        com.lacanasta.util.ResourceMonitor.iniciar();
         launch(args);
     }
 
